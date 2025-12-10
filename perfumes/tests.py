@@ -281,10 +281,10 @@ class PerfumeViewsTestClient(TestCase):
         self.assertEqual(Perfume.objects.count(), 1)
         self.assertFalse(Perfume.objects.filter(pk=self.perfume1.pk).exists())
 
-    def test_root_url_redirects_to_home(self):
+    def test_root_url_redirects_to_perfume_list(self):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, '/accounts/home/', fetch_redirect_response=False)
+        self.assertRedirects(response, '/perfumes/', fetch_redirect_response=False)
 
 
 # ==================== TESTS CON SELENIUM ====================
