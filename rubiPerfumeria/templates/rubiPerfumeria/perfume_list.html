@@ -1,0 +1,62 @@
+{% extends 'rubiPerfumeria/base.html' %}
+
+{% block title %}Lista de Perfumes - RubiPerfumeria{% endblock %}
+
+{% block content %}
+<h2>Lista de Perfumes</h2>
+
+<a href="{% url 'perfume_create' %}">Crear Nuevo Perfume</a>
+
+{% if perfumes %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>Marca</th>
+                <th>Tipo</th>
+                <th>Género</th>
+                <th>Volumen</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for perfume in perfumes %}
+            <tr>
+                <td>
+                    {% if perfume.imagen %}
+                        <img src="{{ perfume.imagen.url }}" alt="{{ perfume.nombre }}" width="50" height="50">
+                    {% else %}
+                        Sin imagen
+                    {% endif %}
+                </td>
+                <td>{{ perfume.nombre }}</td>
+                <td>{{ perfume.marca }}</td>
+                <td>{{ perfume.get_tipo_display }}</td>
+                <td>{{ perfume.get_genero_display }}</td>
+                <td>{{ perfume.volumen }} ml</td>
+                <td>${{ perfume.precio }}</td>
+                <td>{{ perfume.stock }}</td>
+                <td>
+                    {% if perfume.activo %}
+                        Activo
+                    {% else %}
+                        Inactivo
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'perfume_detail' perfume.pk %}">Ver</a>
+                    <a href="{% url 'perfume_update' perfume.pk %}">Editar</a>
+                    <a href="{% url 'perfume_delete' perfume.pk %}">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No hay perfumes registrados.</p>
+{% endif %}
+{% endblock %}

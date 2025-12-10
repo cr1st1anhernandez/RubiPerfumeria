@@ -1,0 +1,32 @@
+{% extends 'rubiPerfumeria/base.html' %}
+
+{% block title %}Eliminar Perfume - RubiPerfumeria{% endblock %}
+
+{% block content %}
+<h2>Confirmar Eliminación</h2>
+
+<p>¿Está seguro que desea eliminar el siguiente perfume?</p>
+
+<dl>
+    <dt>Nombre:</dt>
+    <dd>{{ perfume.nombre }}</dd>
+
+    <dt>Marca:</dt>
+    <dd>{{ perfume.marca }}</dd>
+
+    <dt>Tipo:</dt>
+    <dd>{{ perfume.get_tipo_display }}</dd>
+
+    <dt>Volumen:</dt>
+    <dd>{{ perfume.volumen }} ml</dd>
+
+    <dt>Precio:</dt>
+    <dd>${{ perfume.precio }}</dd>
+</dl>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Sí, eliminar</button>
+    <a href="{% url 'perfume_detail' perfume.pk %}">Cancelar</a>
+</form>
+{% endblock %}

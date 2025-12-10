@@ -1,0 +1,71 @@
+{% extends 'rubiPerfumeria/base.html' %}
+
+{% block title %}{{ perfume.nombre }} - RubiPerfumeria{% endblock %}
+
+{% block content %}
+<h2>Detalle del Perfume</h2>
+
+<div>
+    {% if perfume.imagen %}
+        <img src="{{ perfume.imagen.url }}" alt="{{ perfume.nombre }}" width="200">
+    {% else %}
+        <p>Sin imagen</p>
+    {% endif %}
+</div>
+
+<dl>
+    <dt>Nombre:</dt>
+    <dd>{{ perfume.nombre }}</dd>
+
+    <dt>Marca:</dt>
+    <dd>{{ perfume.marca }}</dd>
+
+    <dt>Descripción:</dt>
+    <dd>{{ perfume.descripcion|default:"Sin descripción" }}</dd>
+
+    <dt>Tipo:</dt>
+    <dd>{{ perfume.get_tipo_display }}</dd>
+
+    <dt>Género:</dt>
+    <dd>{{ perfume.get_genero_display }}</dd>
+
+    <dt>Volumen:</dt>
+    <dd>{{ perfume.volumen }} ml</dd>
+
+    <dt>Precio:</dt>
+    <dd>${{ perfume.precio }}</dd>
+
+    <dt>Stock:</dt>
+    <dd>{{ perfume.stock }} unidades</dd>
+
+    <dt>Estado:</dt>
+    <dd>
+        {% if perfume.activo %}
+            Activo
+        {% else %}
+            Inactivo
+        {% endif %}
+    </dd>
+
+    <dt>Disponible:</dt>
+    <dd>
+        {% if perfume.disponible %}
+            Sí
+        {% else %}
+            No
+        {% endif %}
+    </dd>
+
+    <dt>Fecha de creación:</dt>
+    <dd>{{ perfume.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+
+    <dt>Última actualización:</dt>
+    <dd>{{ perfume.fecha_actualizacion|date:"d/m/Y H:i" }}</dd>
+</dl>
+
+<div>
+    <a href="{% url 'perfume_list' %}">Volver a la lista</a>
+    <a href="{% url 'perfume_update' perfume.pk %}">Editar</a>
+    <a href="{% url 'perfume_delete' perfume.pk %}">Eliminar</a>
+</div>
+{% endblock %}
