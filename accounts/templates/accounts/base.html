@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RubiPerfumeria{% endblock %}</title>
+</head>
+<body>
+    <header>
+        <h1>RubiPerfumeria</h1>
+        <nav>
+            {% if user.is_authenticated %}
+                <span>Usuario: {{ user.username }}</span>
+                <a href="{% url 'home' %}">Inicio</a>
+                <a href="{% url 'perfume_list' %}">Lista de Perfumes</a>
+                <a href="{% url 'perfume_create' %}">Crear Perfume</a>
+                <a href="{% url 'logout' %}">Cerrar Sesión</a>
+                <a href="/admin/">Admin</a>
+            {% else %}
+                <a href="{% url 'login' %}">Iniciar Sesión</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %}
+            <div>
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2025 RubiPerfumeria</p>
+    </footer>
+</body>
+</html>
