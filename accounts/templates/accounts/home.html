@@ -1,0 +1,63 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Inicio - RubiPerfumeria{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+    <h2>Bienvenido, {{ user.username }}</h2>
+
+    <h3>Información del Usuario</h3>
+    <table border="1">
+        <tr>
+            <th>Usuario</th>
+            <td>{{ user.username }}</td>
+        </tr>
+        <tr>
+            <th>Email</th>
+            <td>{{ user.email|default:"No configurado" }}</td>
+        </tr>
+        <tr>
+            <th>Nombre Completo</th>
+            <td>{{ user.get_full_name|default:"No configurado" }}</td>
+        </tr>
+        <tr>
+            <th>Superusuario</th>
+            <td>{{ user.is_superuser|yesno:"Sí,No" }}</td>
+        </tr>
+        <tr>
+            <th>Staff</th>
+            <td>{{ user.is_staff|yesno:"Sí,No" }}</td>
+        </tr>
+        <tr>
+            <th>Último Login</th>
+            <td>{{ user.last_login|date:"d/m/Y H:i" }}</td>
+        </tr>
+        <tr>
+            <th>Fecha de Registro</th>
+            <td>{{ user.date_joined|date:"d/m/Y" }}</td>
+        </tr>
+    </table>
+
+    <br>
+
+    <h3>Características de Seguridad Implementadas</h3>
+    <ul>
+        <li>Autenticación segura con Django</li>
+        <li>Protección CSRF activada</li>
+        <li>Sesiones seguras con cookies HttpOnly</li>
+        <li>Cookies SameSite para protección adicional</li>
+        <li>Contraseñas hasheadas con PBKDF2/Argon2</li>
+        <li>Validación de usuarios activos</li>
+        <li>Protección XSS con headers de seguridad</li>
+        <li>Funcionalidad "Recordarme" implementada</li>
+    </ul>
+
+    {% if user.is_staff %}
+        <p><a href="{% url 'admin:index' %}">Ir al Panel de Administración</a></p>
+    {% endif %}
+
+{% else %}
+    <h2>Bienvenido a RubiPerfumeria</h2>
+    <p>Por favor, <a href="{% url 'login' %}">inicia sesión</a> para continuar.</p>
+{% endif %}
+{% endblock %}
