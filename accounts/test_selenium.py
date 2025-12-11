@@ -51,14 +51,14 @@ class LoginSeleniumTest(StaticLiveServerTestCase):
         password_input.send_keys('testpass123')
         submit_button.click()
 
-        # Wait for redirect to perfume list
+        # Wait for redirect to POS (default role is CAJERO)
         try:
             WebDriverWait(self.selenium, 10).until(
-                EC.url_contains('/perfumes/')
+                EC.url_contains('/pos/')
             )
-            self.assertIn('/perfumes/', self.selenium.current_url)
+            self.assertIn('/pos/', self.selenium.current_url)
         except TimeoutException:
-            self.fail("Login did not redirect to perfume list")
+            self.fail("Login did not redirect to POS")
 
     def test_login_with_invalid_credentials(self):
         """Test login with invalid credentials."""
@@ -93,9 +93,9 @@ class LoginSeleniumTest(StaticLiveServerTestCase):
         password_input.send_keys('testpass123')
         submit_button.click()
 
-        # Wait for login to complete
+        # Wait for login to complete (redirect to POS)
         WebDriverWait(self.selenium, 10).until(
-            EC.url_contains('/perfumes/')
+            EC.url_contains('/pos/')
         )
 
         # Now logout
@@ -132,9 +132,9 @@ class LoginSeleniumTest(StaticLiveServerTestCase):
         password_input.send_keys('testpass123')
         submit_button.click()
 
-        # Wait for redirect
+        # Wait for redirect (to POS for CAJERO)
         WebDriverWait(self.selenium, 10).until(
-            EC.url_contains('/perfumes/')
+            EC.url_contains('/pos/')
         )
 
         # Try to access login page again
