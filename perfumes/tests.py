@@ -146,7 +146,20 @@ class PerfumeModelTest(TestCase):
 
 class PerfumeViewsTestClient(TestCase):
     def setUp(self):
+        from django.contrib.auth.models import User
         self.client = Client()
+
+        # Create supervisor user for testing (required for perfume views)
+        self.user = User.objects.create_user(
+            username='supervisor',
+            password='supervisor123'
+        )
+        self.user.profile.rol = 'SUPERVISOR'
+        self.user.profile.save()
+
+        # Login as supervisor
+        self.client.login(username='supervisor', password='supervisor123')
+
         self.perfume1 = Perfume.objects.create(
             nombre="Sauvage",
             marca="Dior",
@@ -300,8 +313,35 @@ class PerfumeSeleniumTest(LiveServerTestCase):
         super().tearDownClass()
 
     def setUp(self):
+        from django.contrib.auth.models import User
         if not self.selenium:
             self.skipTest("Selenium WebDriver no disponible")
+
+        # Create supervisor user for testing (required for perfume views)
+        self.user = User.objects.create_user(
+            username='supervisor_selenium',
+            password='supervisor123'
+        )
+        self.user.profile.rol = 'SUPERVISOR'
+        self.user.profile.save()
+
+        # Login as supervisor
+        self.client.login(username='supervisor_selenium', password='supervisor123')
+
+        # Create session cookie for Selenium
+        self.selenium.get(f'{self.live_server_url}/accounts/login/')
+        username_input = self.selenium.find_element(By.NAME, 'username')
+        password_input = self.selenium.find_element(By.NAME, 'password')
+        submit_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
+
+        username_input.send_keys('supervisor_selenium')
+        password_input.send_keys('supervisor123')
+        submit_button.click()
+
+        # Wait for successful login (redirect to reportes_ventas for SUPERVISOR)
+        WebDriverWait(self.selenium, 10).until(
+            EC.url_changes(f'{self.live_server_url}/accounts/login/')
+        )
 
         self.perfume = Perfume.objects.create(
             nombre="Sauvage",
