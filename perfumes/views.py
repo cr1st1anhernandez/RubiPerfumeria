@@ -7,7 +7,7 @@ from .models import Perfume
 from .forms import PerfumeForm
 
 
-@login_required
+@supervisor_required
 def perfume_list(request):
     """Lista de perfumes con opción de exportar inventario."""
     exportar = request.GET.get('exportar')
@@ -295,7 +295,7 @@ def exportar_inventario_excel(perfumes, movimientos):
     return response
 
 
-@login_required
+@supervisor_required
 def perfume_detail(request, pk):
     perfume = get_object_or_404(Perfume, pk=pk)
     return render(request, 'perfumes/perfume_detail.html', {'perfume': perfume})

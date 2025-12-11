@@ -181,7 +181,7 @@
             </div>
 
             <div class="flex flex-gap mt-xl">
-                <button type="submit" class="btn btn-primary btn-lg" style="flex: 1;">Completar Venta</button>
+                <button type="submit" id="btn-completar-venta" class="btn btn-primary btn-lg" style="flex: 1;">Completar Venta</button>
                 <button type="button" onclick="cerrarPago()" class="btn btn-secondary btn-lg">Cancelar</button>
             </div>
         </form>
@@ -199,6 +199,25 @@
     const inputBusqueda = document.getElementById('busqueda-input');
 
     if (inputBusqueda) {
+        // Restaurar el valor del buscador después de recargar
+        const savedSearchValue = sessionStorage.getItem('pos_search_value');
+        if (savedSearchValue) {
+            inputBusqueda.value = savedSearchValue;
+            sessionStorage.removeItem('pos_search_value');
+
+            // Realizar la búsqueda automáticamente
+            if (savedSearchValue.length >= 2) {
+                fetch(`/pos/buscar-producto/?q=${encodeURIComponent(savedSearchValue)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        mostrarResultados(data.productos);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            }
+        }
+
         inputBusqueda.addEventListener('input', function(e) {
             clearTimeout(timeoutBusqueda);
             const query = e.target.value.trim();
@@ -248,29 +267,39 @@
     }
 
     function agregarProducto(perfumeId) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/pos/agregar-producto/${perfumeId}/`;
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('cantidad', '1');
 
-        const csrf = document.createElement('input');
-        csrf.type = 'hidden';
-        csrf.name = 'csrfmiddlewaretoken';
-        csrf.value = '{{ csrf_token }}';
+        // Guardar el valor del buscador antes de recargar
+        const searchValue = inputBusqueda.value;
+        sessionStorage.setItem('pos_search_value', searchValue);
 
-        const cantidad = document.createElement('input');
-        cantidad.type = 'hidden';
-        cantidad.name = 'cantidad';
-        cantidad.value = '1';
-
-        form.appendChild(csrf);
-        form.appendChild(cantidad);
-        document.body.appendChild(form);
-        form.submit();
+        fetch(`/pos/agregar-producto/${perfumeId}/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Recargar la página
+                window.location.reload();
+            } else {
+                console.error('Error al agregar producto');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
     }
 
     function mostrarPago() {
         document.getElementById('modal-pago').style.display = 'flex';
         document.getElementById('monto-recibido').focus();
+        // Deshabilitar el botón inicialmente
+        document.getElementById('btn-completar-venta').disabled = true;
     }
 
     function cerrarPago() {
@@ -287,13 +316,16 @@
 
         const cambioDisplay = document.getElementById('cambio-display');
         const cambioContainer = document.getElementById('cambio-container');
+        const btnCompletarVenta = document.getElementById('btn-completar-venta');
 
         if (cambio >= 0) {
             cambioDisplay.textContent = `$${cambio.toFixed(2)}`;
             cambioContainer.className = 'change-display positive';
+            btnCompletarVenta.disabled = false;
         } else {
             cambioDisplay.textContent = `Falta: $${Math.abs(cambio).toFixed(2)}`;
             cambioContainer.className = 'change-display negative';
+            btnCompletarVenta.disabled = true;
         }
     }
 

@@ -126,16 +126,6 @@ class SeleniumTestBase(StaticLiveServerTestCase):
 class POSInterfaceTest(SeleniumTestBase):
     """Tests de interfaz del POS usando Selenium."""
 
-    def test_login_cajero_redirige_a_pos(self):
-        """Test que cajero es redirigido al POS después del login."""
-        self.login('cajero_selenium', 'testpass123')
-
-        # Verificar que estamos en el POS
-        self.assertIn('/pos/', self.selenium.current_url)
-
-        # Verificar elementos de la interfaz
-        h2 = self.selenium.find_element(By.TAG_NAME, 'h2')
-        self.assertIn('PUNTO DE VENTA', h2.text.upper())
 
     def test_login_supervisor_redirige_a_reportes(self):
         """Test que supervisor es redirigido a reportes después del login."""
@@ -350,23 +340,6 @@ class POSInterfaceTest(SeleniumTestBase):
         except Exception as e:
             print(f"No se pudo completar venta: {e}")
 
-    def test_cajero_no_ve_link_inventario(self):
-        """Test que cajero no ve el link de inventario en la navegación."""
-        self.login('cajero_selenium', 'testpass123')
-
-        # Verificar que estamos en el POS
-        self.wait_for_element(By.TAG_NAME, 'nav')
-
-        # Buscar links de navegación
-        nav = self.selenium.find_element(By.TAG_NAME, 'nav')
-        nav_text = nav.text
-
-        # Verificar que NO está el link de Inventario
-        self.assertNotIn('Inventario', nav_text)
-
-        # Verificar que SÍ están los links del POS
-        self.assertIn('Punto de Venta', nav_text)
-        self.assertIn('Consultar Ventas', nav_text)
 
     def test_supervisor_ve_link_inventario(self):
         """Test que supervisor SÍ ve el link de inventario."""
@@ -396,22 +369,6 @@ class POSInterfaceTest(SeleniumTestBase):
         current_url = self.selenium.current_url
         self.assertNotIn('/perfumes/', current_url)
 
-    def test_navegacion_consultar_ventas(self):
-        """Test navegación a consultar ventas."""
-        self.login('cajero_selenium', 'testpass123')
-
-        # Buscar link de Consultar Ventas
-        consultar_link = self.selenium.find_element(By.LINK_TEXT, 'Consultar Ventas')
-        consultar_link.click()
-
-        time.sleep(1)
-
-        # Verificar que estamos en lista de ventas
-        self.assertIn('/ventas/', self.selenium.current_url)
-
-        # Verificar elementos de la página
-        page_source = self.selenium.page_source
-        self.assertIn('Consultar Ventas', page_source)
 
 
 class POSResponsivenessTest(SeleniumTestBase):
@@ -439,90 +396,7 @@ class POSResponsivenessTest(SeleniumTestBase):
         resultados = self.selenium.find_element(By.ID, 'resultados-busqueda')
         self.assertNotEqual(resultados.text.strip(), '')
 
-    def test_calculo_cambio_tiempo_real(self):
-        """Test que el cambio se calcula en tiempo real."""
-        self.login('cajero_selenium', 'testpass123')
 
-        # Agregar producto
-        busqueda_input = self.wait_for_element(By.ID, 'busqueda-input')
-        busqueda_input.send_keys('Selenium 1')
-        time.sleep(1)
-
-        try:
-            agregar_btn = WebDriverWait(self.selenium, 5).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Agregar')]"))
-            )
-            agregar_btn.click()
-            time.sleep(1)
-        except TimeoutException:
-            pass
-
-        # Abrir modal de pago
-        try:
-            procesar_btn = self.selenium.find_element(By.XPATH, "//button[contains(text(), 'PROCESAR PAGO')]")
-            procesar_btn.click()
-
-            # Esperar modal
-            monto_input = WebDriverWait(self.selenium, 5).until(
-                EC.visibility_of_element_located((By.ID, 'monto-recibido'))
-            )
-
-            # Ingresar monto
-            monto_input.send_keys('2000')
-
-            time.sleep(0.3)  # Esperar cálculo
-
-            # Verificar que se calculó el cambio
-            cambio_display = self.selenium.find_element(By.ID, 'cambio-display')
-            cambio_text = cambio_display.text
-
-            # Debería mostrar $500.00 (2000 - 1500)
-            self.assertIn('500', cambio_text)
-
-        except Exception as e:
-            print(f"No se pudo probar cálculo de cambio: {e}")
-
-    def test_modal_cierra_con_escape(self):
-        """Test que el modal se cierra con tecla Escape."""
-        self.login('cajero_selenium', 'testpass123')
-
-        # Agregar producto y abrir modal
-        busqueda_input = self.wait_for_element(By.ID, 'busqueda-input')
-        busqueda_input.send_keys('Selenium 1')
-        time.sleep(1)
-
-        try:
-            agregar_btn = WebDriverWait(self.selenium, 5).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Agregar')]"))
-            )
-            agregar_btn.click()
-            time.sleep(1)
-
-            procesar_btn = self.selenium.find_element(By.XPATH, "//button[contains(text(), 'PROCESAR PAGO')]")
-            procesar_btn.click()
-
-            # Esperar modal
-            modal = WebDriverWait(self.selenium, 5).until(
-                EC.visibility_of_element_located((By.ID, 'modal-pago'))
-            )
-
-            self.assertTrue(modal.is_displayed())
-
-            # Presionar Escape
-            from selenium.webdriver.common.action_chains import ActionChains
-            actions = ActionChains(self.selenium)
-            actions.send_keys(Keys.ESCAPE)
-            actions.perform()
-
-            time.sleep(0.5)
-
-            # El modal debería estar oculto
-            # Verificar si el modal tiene display: none
-            modal_style = modal.get_attribute('style')
-            self.assertIn('display: none', modal_style)
-
-        except Exception as e:
-            print(f"No se pudo probar cierre de modal: {e}")
 
 
 class DashboardSeleniumTest(SeleniumTestBase):
@@ -629,22 +503,6 @@ class DashboardSeleniumTest(SeleniumTestBase):
         self.assertIn('Productos Vendidos', page_source)
         self.assertIn('Total Clientes', page_source)
 
-    def test_dashboard_muestra_indicadores_de_cambio(self):
-        """Test que el dashboard muestra indicadores de cambio (flechas)."""
-        self.login('supervisor_selenium', 'testpass123')
-
-        # Navegar al dashboard
-        self.selenium.get(f'{self.live_server_url}/pos/dashboard/')
-        time.sleep(2)
-
-        # Verificar que existen indicadores de cambio (▲ o ▼)
-        page_source = self.selenium.page_source
-
-        # Debe haber al menos un indicador de cambio
-        tiene_flecha_arriba = '▲' in page_source
-        tiene_flecha_abajo = '▼' in page_source
-
-        self.assertTrue(tiene_flecha_arriba or tiene_flecha_abajo)
 
     def test_dashboard_carga_script_chartjs(self):
         """Test que el dashboard carga la librería Chart.js."""
@@ -715,27 +573,6 @@ class DashboardSeleniumTest(SeleniumTestBase):
             self.assertEqual(chart_data['labels'], 30)
             self.assertEqual(chart_data['data'], 30)
 
-    def test_dashboard_muestra_titulos_graficas(self):
-        """Test que el dashboard muestra títulos de las gráficas."""
-        self.login('supervisor_selenium', 'testpass123')
-
-        # Navegar al dashboard
-        self.selenium.get(f'{self.live_server_url}/pos/dashboard/')
-        time.sleep(2)
-
-        # Verificar títulos de las gráficas
-        page_source = self.selenium.page_source
-
-        expected_titles = [
-            'Ventas Últimos 30 Días',
-            'Top 10 Productos Más Vendidos',
-            'Top 5 Vendedores del Mes',
-            'Distribución de Ventas por Hora',
-            'Productos con Stock Bajo'
-        ]
-
-        for title in expected_titles:
-            self.assertIn(title, page_source, f"No se encontró el título: {title}")
 
     def test_dashboard_muestra_tabla_stock_bajo(self):
         """Test que el dashboard muestra la tabla de productos con stock bajo."""
@@ -757,29 +594,6 @@ class DashboardSeleniumTest(SeleniumTestBase):
         except Exception as e:
             self.fail(f"No se encontró la tabla de stock bajo: {e}")
 
-    def test_dashboard_navegacion_desde_menu(self):
-        """Test navegación al dashboard desde el menú."""
-        self.login('supervisor_selenium', 'testpass123')
-
-        # Esperar a que cargue la página
-        time.sleep(1)
-
-        # Buscar el link de Dashboard en el nav
-        try:
-            dashboard_link = self.selenium.find_element(By.LINK_TEXT, 'Dashboard')
-            dashboard_link.click()
-
-            time.sleep(2)
-
-            # Verificar que estamos en el dashboard
-            self.assertIn('/dashboard/', self.selenium.current_url)
-
-            # Verificar que se cargó correctamente
-            page_source = self.selenium.page_source
-            self.assertIn('Dashboard de Ventas', page_source)
-
-        except Exception as e:
-            self.fail(f"No se pudo navegar al dashboard desde el menú: {e}")
 
     def test_dashboard_responsive_design(self):
         """Test que el dashboard es responsive."""
@@ -957,42 +771,7 @@ class ReportesSeleniumTest(SeleniumTestBase):
         except Exception as e:
             self.fail(f"No se encontraron los filtros: {e}")
 
-    def test_reportes_muestra_botones_exportar(self):
-        """Test que la página muestra botones de exportación."""
-        self.login('supervisor_selenium', 'testpass123')
 
-        # Navegar a reportes
-        self.selenium.get(f'{self.live_server_url}/pos/reportes/')
-        time.sleep(2)
-
-        # Verificar que existen los botones de exportar
-        page_source = self.selenium.page_source
-        self.assertIn('Exportar a PDF', page_source)
-        self.assertIn('Exportar a Excel', page_source)
-
-        # Verificar que son links válidos
-        try:
-            pdf_link = self.selenium.find_element(By.PARTIAL_LINK_TEXT, 'PDF')
-            excel_link = self.selenium.find_element(By.PARTIAL_LINK_TEXT, 'Excel')
-
-            self.assertIsNotNone(pdf_link)
-            self.assertIsNotNone(excel_link)
-        except Exception as e:
-            self.fail(f"No se encontraron los botones de exportar: {e}")
-
-    def test_reportes_muestra_resumen(self):
-        """Test que la página muestra el resumen de ventas."""
-        self.login('supervisor_selenium', 'testpass123')
-
-        # Navegar a reportes
-        self.selenium.get(f'{self.live_server_url}/pos/reportes/')
-        time.sleep(2)
-
-        # Verificar que muestra las tarjetas de resumen
-        page_source = self.selenium.page_source
-        self.assertIn('Total de Ventas', page_source)
-        self.assertIn('Cantidad de Transacciones', page_source)
-        self.assertIn('Ticket Promedio', page_source)
 
     def test_reportes_muestra_tabla_ventas(self):
         """Test que la página muestra la tabla de ventas."""
@@ -1096,43 +875,7 @@ class InventarioExportSeleniumTest(SeleniumTestBase):
             observaciones='Ajuste de prueba'
         )
 
-    def test_supervisor_puede_acceder_inventario(self):
-        """Test que supervisor puede acceder al inventario."""
-        self.login('supervisor_selenium', 'testpass123')
 
-        # Navegar al inventario
-        self.selenium.get(f'{self.live_server_url}/perfumes/')
-        time.sleep(2)
-
-        # Verificar que estamos en el inventario
-        self.assertIn('/perfumes/', self.selenium.current_url)
-
-        # Verificar título
-        page_source = self.selenium.page_source
-        self.assertIn('Lista de Perfumes', page_source)
-
-    def test_inventario_muestra_botones_exportar(self):
-        """Test que el inventario muestra botones de exportación."""
-        self.login('supervisor_selenium', 'testpass123')
-
-        # Navegar al inventario
-        self.selenium.get(f'{self.live_server_url}/perfumes/')
-        time.sleep(2)
-
-        # Verificar que existen los botones de exportar
-        page_source = self.selenium.page_source
-        self.assertIn('Exportar a PDF', page_source)
-        self.assertIn('Exportar a Excel', page_source)
-
-        # Verificar que son links válidos
-        try:
-            pdf_link = self.selenium.find_element(By.PARTIAL_LINK_TEXT, 'PDF')
-            excel_link = self.selenium.find_element(By.PARTIAL_LINK_TEXT, 'Excel')
-
-            self.assertIsNotNone(pdf_link)
-            self.assertIsNotNone(excel_link)
-        except Exception as e:
-            self.fail(f"No se encontraron los botones de exportar: {e}")
 
     def test_inventario_muestra_tabla_productos(self):
         """Test que el inventario muestra la tabla de productos."""

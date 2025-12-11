@@ -96,7 +96,8 @@ class LoginViewTest(TestCase):
             'password': 'testpass123'
         })
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('perfume_list'))
+        # Default role is CAJERO, should redirect to POS
+        self.assertRedirects(response, reverse('pos:pos_principal'))
 
     def test_login_with_invalid_credentials(self):
         """Test login with invalid credentials."""
