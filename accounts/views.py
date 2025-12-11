@@ -22,12 +22,14 @@ def user_login(request):
 
                 # Redirect based on role
                 if hasattr(user, 'profile'):
-                    if user.profile.es_administrador() or user.profile.es_supervisor():
-                        return redirect('perfume_list')
-                    else:
-                        return redirect('perfume_list')
+                    if user.profile.rol == 'CAJERO':
+                        return redirect('pos:pos_principal')
+                    elif user.profile.rol == 'SUPERVISOR':
+                        return redirect('pos:reportes_ventas')
+                    elif user.profile.es_administrador():
+                        return redirect('home')
 
-                return redirect('perfume_list')
+                return redirect('home')
             else:
                 messages.error(request, 'Usuario o contraseña incorrectos.')
         else:
