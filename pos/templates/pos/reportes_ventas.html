@@ -1,0 +1,78 @@
+{% extends 'pos/base_pos.html' %}
+
+{% block title %}Reportes de Ventas - Rubi Perfumeria{% endblock %}
+
+{% block content %}
+<h2>Reportes de Ventas</h2>
+<p><a href="{% url 'pos:pos_principal' %}">Volver al POS</a></p>
+
+<table border="1" cellpadding="10" cellspacing="0" width="100%">
+<tr>
+<td valign="top" width="33%">
+    <h3>Ventas del Dia</h3>
+    <p><strong>{{ ventas_hoy }}</strong> ventas completadas</p>
+    <hr>
+    <p><strong>${{ total_hoy|floatformat:2 }}</strong></p>
+    <p>Total facturado hoy</p>
+</td>
+
+<td valign="top" width="33%">
+    <h3>Ultima Semana (7 dias)</h3>
+    <p><strong>{{ ventas_semana }}</strong> ventas completadas</p>
+    <hr>
+    <p><strong>${{ total_semana|floatformat:2 }}</strong></p>
+    <p>Total facturado</p>
+</td>
+
+<td valign="top" width="33%">
+    <h3>Ultimo Mes (30 dias)</h3>
+    <p><strong>{{ ventas_mes }}</strong> ventas completadas</p>
+    <hr>
+    <p><strong>${{ total_mes|floatformat:2 }}</strong></p>
+    <p>Total facturado</p>
+</td>
+</tr>
+</table>
+
+<table border="1" cellpadding="10" cellspacing="0" width="100%">
+<tr>
+<td valign="top" width="50%">
+    <h3>Reportes Disponibles</h3>
+    <p>
+        <a href="{% url 'pos:lista_ventas' %}">Ver Todas las Ventas</a>
+    </p>
+    <p>
+        <a href="{% url 'pos:reporte_movimientos' %}">Movimientos de Inventario</a>
+    </p>
+</td>
+
+<td valign="top" width="50%">
+    <h3>Informacion</h3>
+    <p>
+        <strong>Usuario:</strong> {{ user.username }}
+    </p>
+    <p>
+        <strong>Rol:</strong> {{ user.profile.get_rol_display }}
+    </p>
+    <p>
+        <strong>Fecha de Consulta:</strong> {% now "d/m/Y H:i" %}
+    </p>
+</td>
+</tr>
+</table>
+
+<table border="1" cellpadding="10" cellspacing="0" width="100%">
+<tr>
+<td>
+    <h3>Proximamente</h3>
+    <p>
+        - Graficas de ventas por periodo<br>
+        - Top 10 productos mas vendidos<br>
+        - Ventas por cajero<br>
+        - Exportar reportes a Excel/PDF<br>
+        - Analisis de tendencias
+    </p>
+</td>
+</tr>
+</table>
+{% endblock %}
