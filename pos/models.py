@@ -153,6 +153,8 @@ class Product(models.Model):
     @property
     def valor_inventario(self):
         """Calcula el valor total del inventario actual"""
+        if self.precio is None:
+            return Decimal('0.00')
         return self.stock_actual * self.precio
 
 
