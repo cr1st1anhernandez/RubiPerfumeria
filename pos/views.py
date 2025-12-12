@@ -627,3 +627,94 @@ def generar_ticket_pdf(request, venta_id):
     p.save()
 
     return response
+
+
+# ===== DASHBOARD =====
+
+@supervisor_required
+def dashboard(request):
+    """Dashboard principal para supervisores y administradores."""
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.db.models import Avg, Count
+
+    # Fecha actual y rangos
+    hoy = timezone.now().date()
+    inicio_mes = hoy.replace(day=1)
+    hace_30_dias = hoy - timedelta(days=30)
+
+    # KPIs principales
+    total_ventas_hoy = Venta.objects.filter(fecha_creacion__date=hoy).aggregate(
+        total=Sum('total')
+    )['total'] or Decimal('0')
+
+    total_ventas_mes = Venta.objects.filter(fecha_creacion__date__gte=inicio_mes).aggregate(
+        total=Sum('total')
+    )['total'] or Decimal('0')
+
+    numero_ventas_hoy = Venta.objects.filter(fecha_creacion__date=hoy).count()
+    numero_ventas_mes = Venta.objects.filter(fecha_creacion__date__gte=inicio_mes).count()
+
+    ticket_promedio = Venta.objects.filter(fecha_creacion__date__gte=inicio_mes).aggregate(
+        promedio=Avg('total')
+    )['promedio'] or Decimal('0')
+
+    # Ventas por día (últimos 7 días)
+    ventas_por_dia = []
+    for i in range(6, -1, -1):
+        dia = hoy - timedelta(days=i)
+        total_dia = Venta.objects.filter(fecha_creacion__date=dia).aggregate(
+            total=Sum('total')
+        )['total'] or Decimal('0')
+        ventas_por_dia.append({
+            'fecha': dia.strftime('%d/%m'),
+            'total': float(total_dia)
+        })
+
+    # Top 5 productos más vendidos (últimos 30 días)
+    top_productos = DetalleVenta.objects.filter(
+        venta__fecha_creacion__date__gte=hace_30_dias
+    ).values(
+        'perfume__nombre', 'perfume__marca'
+    ).annotate(
+        cantidad=Sum('cantidad'),
+        total_vendido=Sum('subtotal')
+    ).order_by('-total_vendido')[:5]
+
+    # Ventas por método de pago (mes actual)
+    ventas_por_metodo = Venta.objects.filter(
+        fecha_creacion__date__gte=inicio_mes
+    ).values(
+        'metodo_pago'
+    ).annotate(
+        total=Sum('total'),
+        cantidad=Count('id')
+    ).order_by('-total')
+
+    # Ventas por cajero (mes actual)
+    ventas_por_cajero = Venta.objects.filter(
+        fecha_creacion__date__gte=inicio_mes
+    ).values(
+        'cajero__username'
+    ).annotate(
+        total=Sum('total'),
+        cantidad=Count('id')
+    ).order_by('-total')[:5]
+
+    # Stock bajo (productos con menos de 10 unidades)
+    productos_stock_bajo = Perfume.objects.filter(stock__lt=10).order_by('stock')[:5]
+
+    context = {
+        'total_ventas_hoy': total_ventas_hoy,
+        'total_ventas_mes': total_ventas_mes,
+        'numero_ventas_hoy': numero_ventas_hoy,
+        'numero_ventas_mes': numero_ventas_mes,
+        'ticket_promedio': ticket_promedio,
+        'ventas_por_dia': ventas_por_dia,
+        'top_productos': top_productos,
+        'ventas_por_metodo': ventas_por_metodo,
+        'ventas_por_cajero': ventas_por_cajero,
+        'productos_stock_bajo': productos_stock_bajo,
+    }
+
+    return render(request, 'pos/dashboard.html', context)
