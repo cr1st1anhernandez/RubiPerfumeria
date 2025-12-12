@@ -1,0 +1,39 @@
+{% extends 'pos/base.html' %}
+
+{% block title %}Movimiento de Inventario - Sistema POS{% endblock %}
+
+{% block content %}
+<h2>Registrar Movimiento de Inventario</h2>
+
+<p>
+    <a href="{% url 'pos:product_list' %}">&larr; Volver a Productos</a> |
+    <a href="{% url 'pos:index' %}">Ir a Caja</a>
+</p>
+
+<section>
+    <h3>Nuevo Movimiento</h3>
+    <form method="POST">
+        {% csrf_token %}
+        <table>
+            {{ form.as_table }}
+        </table>
+        <p>
+            <button type="submit">Registrar Movimiento</button>
+            <a href="{% url 'pos:product_list' %}"><button type="button">Cancelar</button></a>
+        </p>
+    </form>
+</section>
+
+<hr>
+
+<section>
+    <h3>Información</h3>
+    <ul>
+        <li><strong>ENTRADA:</strong> Aumenta el stock (ej: compra a proveedor)</li>
+        <li><strong>SALIDA:</strong> Reduce el stock (ej: producto dañado, merma)</li>
+        <li><strong>AJUSTE:</strong> Ajuste de inventario (reduce el stock)</li>
+        <li><strong>DEVOLUCION:</strong> Devolución de cliente (aumenta el stock)</li>
+    </ul>
+    <p><em>Nota: El stock se actualiza automáticamente al registrar el movimiento.</em></p>
+</section>
+{% endblock %}
