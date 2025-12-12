@@ -633,45 +633,98 @@ def generar_ticket_pdf(request, venta_id):
 
 @supervisor_required
 def dashboard(request):
-    """Dashboard principal para supervisores y administradores."""
+    """Dashboard principal para supervisores y administradores con gráficas y análisis."""
     from django.utils import timezone
     from datetime import timedelta
     from django.db.models import Avg, Count
+    import json
+    import calendar
 
     # Fecha actual y rangos
     hoy = timezone.now().date()
     inicio_mes = hoy.replace(day=1)
     hace_30_dias = hoy - timedelta(days=30)
 
-    # KPIs principales
+    # Calcular mes anterior para comparaciones
+    if inicio_mes.month == 1:
+        inicio_mes_anterior = inicio_mes.replace(year=inicio_mes.year - 1, month=12)
+    else:
+        inicio_mes_anterior = inicio_mes.replace(month=inicio_mes.month - 1)
+
+    fin_mes_anterior = inicio_mes - timedelta(days=1)
+
+    # ===== KPIs PRINCIPALES CON COMPARACIÓN =====
+
+    # Ventas de hoy
     total_ventas_hoy = Venta.objects.filter(fecha_creacion__date=hoy).aggregate(
         total=Sum('total')
     )['total'] or Decimal('0')
+    numero_ventas_hoy = Venta.objects.filter(fecha_creacion__date=hoy).count()
 
-    total_ventas_mes = Venta.objects.filter(fecha_creacion__date__gte=inicio_mes).aggregate(
+    # Ventas de ayer para comparación
+    ayer = hoy - timedelta(days=1)
+    total_ventas_ayer = Venta.objects.filter(fecha_creacion__date=ayer).aggregate(
         total=Sum('total')
     )['total'] or Decimal('0')
 
-    numero_ventas_hoy = Venta.objects.filter(fecha_creacion__date=hoy).count()
+    # Calcular cambio porcentual día
+    if total_ventas_ayer > 0:
+        cambio_dia = ((total_ventas_hoy - total_ventas_ayer) / total_ventas_ayer) * 100
+    else:
+        cambio_dia = 100 if total_ventas_hoy > 0 else 0
+
+    # Ventas del mes actual
+    total_ventas_mes = Venta.objects.filter(fecha_creacion__date__gte=inicio_mes).aggregate(
+        total=Sum('total')
+    )['total'] or Decimal('0')
     numero_ventas_mes = Venta.objects.filter(fecha_creacion__date__gte=inicio_mes).count()
 
+    # Ventas del mes anterior
+    total_ventas_mes_anterior = Venta.objects.filter(
+        fecha_creacion__date__gte=inicio_mes_anterior,
+        fecha_creacion__date__lte=fin_mes_anterior
+    ).aggregate(total=Sum('total'))['total'] or Decimal('0')
+
+    # Calcular cambio porcentual mes
+    if total_ventas_mes_anterior > 0:
+        cambio_mes = ((total_ventas_mes - total_ventas_mes_anterior) / total_ventas_mes_anterior) * 100
+    else:
+        cambio_mes = 100 if total_ventas_mes > 0 else 0
+
+    # Ticket promedio
     ticket_promedio = Venta.objects.filter(fecha_creacion__date__gte=inicio_mes).aggregate(
         promedio=Avg('total')
     )['promedio'] or Decimal('0')
 
-    # Ventas por día (últimos 7 días)
+    ticket_promedio_anterior = Venta.objects.filter(
+        fecha_creacion__date__gte=inicio_mes_anterior,
+        fecha_creacion__date__lte=fin_mes_anterior
+    ).aggregate(promedio=Avg('total'))['promedio'] or Decimal('0')
+
+    if ticket_promedio_anterior > 0:
+        cambio_ticket = ((ticket_promedio - ticket_promedio_anterior) / ticket_promedio_anterior) * 100
+    else:
+        cambio_ticket = 100 if ticket_promedio > 0 else 0
+
+    # ===== GRÁFICA: VENTAS POR DÍA (ÚLTIMOS 30 DÍAS) =====
     ventas_por_dia = []
-    for i in range(6, -1, -1):
+    fechas_grafica = []
+    totales_grafica = []
+
+    for i in range(29, -1, -1):
         dia = hoy - timedelta(days=i)
         total_dia = Venta.objects.filter(fecha_creacion__date=dia).aggregate(
             total=Sum('total')
         )['total'] or Decimal('0')
+
         ventas_por_dia.append({
             'fecha': dia.strftime('%d/%m'),
             'total': float(total_dia)
         })
+        fechas_grafica.append(dia.strftime('%d/%m'))
+        totales_grafica.append(float(total_dia))
 
-    # Top 5 productos más vendidos (últimos 30 días)
+    # ===== GRÁFICA: TOP 10 PRODUCTOS MÁS VENDIDOS =====
     top_productos = DetalleVenta.objects.filter(
         venta__fecha_creacion__date__gte=hace_30_dias
     ).values(
@@ -679,19 +732,19 @@ def dashboard(request):
     ).annotate(
         cantidad=Sum('cantidad'),
         total_vendido=Sum('subtotal')
-    ).order_by('-total_vendido')[:5]
+    ).order_by('-total_vendido')[:10]
 
-    # Ventas por método de pago (mes actual)
-    ventas_por_metodo = Venta.objects.filter(
-        fecha_creacion__date__gte=inicio_mes
-    ).values(
-        'metodo_pago'
-    ).annotate(
-        total=Sum('total'),
-        cantidad=Count('id')
-    ).order_by('-total')
+    productos_labels = []
+    productos_valores = []
+    productos_cantidades = []
 
-    # Ventas por cajero (mes actual)
+    for producto in top_productos:
+        label = f"{producto['perfume__marca']} {producto['perfume__nombre']}"
+        productos_labels.append(label)
+        productos_valores.append(float(producto['total_vendido']))
+        productos_cantidades.append(producto['cantidad'])
+
+    # ===== GRÁFICA: VENTAS POR CAJERO (TOP 5) =====
     ventas_por_cajero = Venta.objects.filter(
         fecha_creacion__date__gte=inicio_mes
     ).values(
@@ -701,19 +754,70 @@ def dashboard(request):
         cantidad=Count('id')
     ).order_by('-total')[:5]
 
+    cajeros_labels = []
+    cajeros_valores = []
+    cajeros_cantidades = []
+
+    for cajero in ventas_por_cajero:
+        cajeros_labels.append(cajero['cajero__username'])
+        cajeros_valores.append(float(cajero['total']))
+        cajeros_cantidades.append(cajero['cantidad'])
+
+    # ===== GRÁFICA: DISTRIBUCIÓN DE VENTAS POR HORA =====
+    ventas_por_hora = Venta.objects.filter(
+        fecha_creacion__date__gte=inicio_mes
+    ).extra(select={'hora': 'strftime("%%H", fecha_creacion)'}).values('hora').annotate(
+        total=Sum('total'),
+        cantidad=Count('id')
+    ).order_by('hora')
+
+    horas_labels = [f"{i:02d}:00" for i in range(24)]
+    horas_valores = [0] * 24
+
+    for venta in ventas_por_hora:
+        hora_idx = int(venta['hora'])
+        horas_valores[hora_idx] = float(venta['total'])
+
     # Stock bajo (productos con menos de 10 unidades)
-    productos_stock_bajo = Perfume.objects.filter(stock__lt=10).order_by('stock')[:5]
+    productos_stock_bajo = Perfume.objects.filter(stock__lt=10).order_by('stock')[:10]
+
+    # ===== MÉTRICAS ADICIONALES =====
+    total_productos_vendidos = DetalleVenta.objects.filter(
+        venta__fecha_creacion__date__gte=inicio_mes
+    ).aggregate(total=Sum('cantidad'))['total'] or 0
+
+    total_clientes_mes = numero_ventas_mes  # Cada venta representa un cliente
 
     context = {
+        # KPIs principales
         'total_ventas_hoy': total_ventas_hoy,
         'total_ventas_mes': total_ventas_mes,
         'numero_ventas_hoy': numero_ventas_hoy,
         'numero_ventas_mes': numero_ventas_mes,
         'ticket_promedio': ticket_promedio,
-        'ventas_por_dia': ventas_por_dia,
-        'top_productos': top_productos,
-        'ventas_por_metodo': ventas_por_metodo,
-        'ventas_por_cajero': ventas_por_cajero,
+
+        # Comparaciones
+        'cambio_dia': round(cambio_dia, 1),
+        'cambio_mes': round(cambio_mes, 1),
+        'cambio_ticket': round(cambio_ticket, 1),
+
+        # Métricas adicionales
+        'total_productos_vendidos': total_productos_vendidos,
+        'total_clientes_mes': total_clientes_mes,
+
+        # Datos para gráficas (JSON)
+        'fechas_grafica': json.dumps(fechas_grafica),
+        'totales_grafica': json.dumps(totales_grafica),
+        'productos_labels': json.dumps(productos_labels),
+        'productos_valores': json.dumps(productos_valores),
+        'productos_cantidades': json.dumps(productos_cantidades),
+        'cajeros_labels': json.dumps(cajeros_labels),
+        'cajeros_valores': json.dumps(cajeros_valores),
+        'cajeros_cantidades': json.dumps(cajeros_cantidades),
+        'horas_labels': json.dumps(horas_labels),
+        'horas_valores': json.dumps(horas_valores),
+
+        # Stock bajo
         'productos_stock_bajo': productos_stock_bajo,
     }
 

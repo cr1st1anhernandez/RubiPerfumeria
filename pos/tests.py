@@ -853,3 +853,285 @@ class LoginRedirectTest(BaseTestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('home'))
+
+
+class DashboardViewTest(TransactionTestCase):
+    """Tests para la vista de dashboard con gráficas y análisis."""
+
+    def setUp(self):
+        """Configurar datos de prueba para dashboard."""
+        # Crear usuarios
+        self.admin_user = User.objects.create_user(
+            username='admin_test',
+            password='testpass123',
+            email='admin@test.com'
+        )
+        self.admin_user.profile.rol = 'ADMINISTRADOR'
+        self.admin_user.profile.save()
+
+        self.supervisor_user = User.objects.create_user(
+            username='supervisor_test',
+            password='testpass123',
+            email='supervisor@test.com'
+        )
+        self.supervisor_user.profile.rol = 'SUPERVISOR'
+        self.supervisor_user.profile.save()
+
+        self.cajero_user = User.objects.create_user(
+            username='cajero_test',
+            password='testpass123',
+            email='cajero@test.com'
+        )
+        self.cajero_user.profile.rol = 'CAJERO'
+        self.cajero_user.profile.save()
+
+        # Crear perfumes
+        self.perfume1 = Perfume.objects.create(
+            nombre='Sauvage',
+            marca='Dior',
+            tipo='EDP',
+            genero='M',
+            notas_superiores='Bergamota',
+            notas_medias='Pimienta',
+            notas_base='Ambroxan',
+            volumen=100,
+            precio=Decimal('2500.00'),
+            stock=50
+        )
+
+        self.perfume2 = Perfume.objects.create(
+            nombre='Bleu de Chanel',
+            marca='Chanel',
+            tipo='EDP',
+            genero='M',
+            notas_superiores='Citricos',
+            notas_medias='Cedro',
+            notas_base='Sandalo',
+            volumen=100,
+            precio=Decimal('2800.00'),
+            stock=3  # Stock bajo
+        )
+
+        # Crear ventas de hoy
+        hoy = timezone.now()
+        self.venta_hoy_1 = Venta.objects.create(
+            cajero=self.cajero_user,
+            subtotal=Decimal('2500.00'),
+            total=Decimal('2500.00'),
+            monto_recibido=Decimal('3000.00'),
+            cambio=Decimal('500.00'),
+            metodo_pago='EFECTIVO',
+            estado='COMPLETADA',
+            fecha_creacion=hoy
+        )
+
+        DetalleVenta.objects.create(
+            venta=self.venta_hoy_1,
+            perfume=self.perfume1,
+            cantidad=1,
+            precio_unitario=Decimal('2500.00'),
+            subtotal=Decimal('2500.00')
+        )
+
+        self.venta_hoy_2 = Venta.objects.create(
+            cajero=self.cajero_user,
+            subtotal=Decimal('2800.00'),
+            total=Decimal('2800.00'),
+            monto_recibido=Decimal('2800.00'),
+            cambio=Decimal('0.00'),
+            metodo_pago='TARJETA',
+            estado='COMPLETADA',
+            fecha_creacion=hoy
+        )
+
+        DetalleVenta.objects.create(
+            venta=self.venta_hoy_2,
+            perfume=self.perfume2,
+            cantidad=1,
+            precio_unitario=Decimal('2800.00'),
+            subtotal=Decimal('2800.00')
+        )
+
+        # Crear venta de ayer
+        ayer = timezone.now() - timedelta(days=1)
+        self.venta_ayer = Venta.objects.create(
+            cajero=self.cajero_user,
+            subtotal=Decimal('5000.00'),
+            total=Decimal('5000.00'),
+            monto_recibido=Decimal('5000.00'),
+            cambio=Decimal('0.00'),
+            metodo_pago='EFECTIVO',
+            estado='COMPLETADA',
+            fecha_creacion=ayer
+        )
+
+        DetalleVenta.objects.create(
+            venta=self.venta_ayer,
+            perfume=self.perfume1,
+            cantidad=2,
+            precio_unitario=Decimal('2500.00'),
+            subtotal=Decimal('5000.00')
+        )
+
+        self.client = Client()
+
+    def test_dashboard_requiere_login(self):
+        """Test que dashboard requiere autenticación."""
+        response = self.client.get(reverse('pos:dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_cajero_no_puede_acceder_dashboard(self):
+        """Test que cajero no puede acceder al dashboard."""
+        self.client.login(username='cajero_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        # Debe redirigir por falta de permisos
+        self.assertEqual(response.status_code, 302)
+
+    def test_supervisor_puede_acceder_dashboard(self):
+        """Test que supervisor puede acceder al dashboard."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'pos/dashboard.html')
+
+    def test_admin_puede_acceder_dashboard(self):
+        """Test que administrador puede acceder al dashboard."""
+        self.client.login(username='admin_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'pos/dashboard.html')
+
+    def test_dashboard_muestra_kpis_correctos(self):
+        """Test que dashboard muestra KPIs correctos."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        # Verificar que el contexto tiene los KPIs principales
+        self.assertIn('total_ventas_hoy', response.context)
+        self.assertIn('total_ventas_mes', response.context)
+        self.assertIn('numero_ventas_hoy', response.context)
+        self.assertIn('numero_ventas_mes', response.context)
+        self.assertIn('ticket_promedio', response.context)
+
+        # Verificar que los valores son del tipo correcto
+        self.assertIsInstance(response.context['total_ventas_hoy'], Decimal)
+        self.assertIsInstance(response.context['total_ventas_mes'], Decimal)
+        self.assertIsInstance(response.context['numero_ventas_hoy'], int)
+        self.assertIsInstance(response.context['numero_ventas_mes'], int)
+
+        # Verificar que hay ventas en el mes (al menos las 3 que creamos)
+        self.assertGreaterEqual(response.context['numero_ventas_mes'], 3)
+
+    def test_dashboard_calcula_cambios_porcentuales(self):
+        """Test que dashboard calcula cambios porcentuales vs períodos anteriores."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        # Verificar que existen los datos de comparación
+        self.assertIn('cambio_dia', response.context)
+        self.assertIn('cambio_mes', response.context)
+        self.assertIn('cambio_ticket', response.context)
+
+        # cambio_dia puede ser int, float o Decimal
+        cambio_dia = response.context['cambio_dia']
+        self.assertIsInstance(cambio_dia, (int, float, Decimal))
+
+    def test_dashboard_muestra_datos_para_graficas(self):
+        """Test que dashboard prepara datos para gráficas en formato JSON."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        # Verificar datos para gráficas
+        self.assertIn('fechas_grafica', response.context)
+        self.assertIn('totales_grafica', response.context)
+        self.assertIn('productos_labels', response.context)
+        self.assertIn('productos_valores', response.context)
+        self.assertIn('cajeros_labels', response.context)
+        self.assertIn('cajeros_valores', response.context)
+        self.assertIn('horas_labels', response.context)
+        self.assertIn('horas_valores', response.context)
+
+        # Los datos deben ser strings JSON
+        import json
+        fechas = json.loads(response.context['fechas_grafica'])
+        totales = json.loads(response.context['totales_grafica'])
+
+        self.assertIsInstance(fechas, list)
+        self.assertIsInstance(totales, list)
+        self.assertEqual(len(fechas), 30)  # Últimos 30 días
+        self.assertEqual(len(totales), 30)
+
+    def test_dashboard_detecta_stock_bajo(self):
+        """Test que dashboard detecta productos con stock bajo."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        productos_stock_bajo = response.context['productos_stock_bajo']
+
+        # perfume2 tiene stock de 3, debe aparecer en la lista
+        self.assertGreater(len(productos_stock_bajo), 0)
+
+        # Verificar que perfume2 está en la lista
+        perfume_ids = [p.id for p in productos_stock_bajo]
+        self.assertIn(self.perfume2.id, perfume_ids)
+
+    def test_dashboard_muestra_top_productos(self):
+        """Test que dashboard muestra top productos vendidos."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        import json
+        productos_labels = json.loads(response.context['productos_labels'])
+        productos_valores = json.loads(response.context['productos_valores'])
+
+        # Debe haber al menos 1 producto en el top
+        self.assertGreater(len(productos_labels), 0)
+        self.assertGreater(len(productos_valores), 0)
+        self.assertEqual(len(productos_labels), len(productos_valores))
+
+    def test_dashboard_muestra_ventas_por_cajero(self):
+        """Test que dashboard muestra ventas por cajero."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        import json
+        cajeros_labels = json.loads(response.context['cajeros_labels'])
+        cajeros_valores = json.loads(response.context['cajeros_valores'])
+
+        # Debe haber al menos 1 cajero
+        self.assertGreater(len(cajeros_labels), 0)
+        self.assertIn('cajero_test', cajeros_labels)
+
+    def test_dashboard_muestra_metricas_adicionales(self):
+        """Test que dashboard muestra métricas adicionales."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        # Verificar métricas adicionales
+        self.assertIn('total_productos_vendidos', response.context)
+        self.assertIn('total_clientes_mes', response.context)
+
+        # Verificar valores
+        total_productos = response.context['total_productos_vendidos']
+        self.assertGreater(total_productos, 0)
+
+    def test_dashboard_muestra_distribucion_por_hora(self):
+        """Test que dashboard muestra distribución de ventas por hora."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:dashboard'))
+
+        import json
+        horas_labels = json.loads(response.context['horas_labels'])
+        horas_valores = json.loads(response.context['horas_valores'])
+
+        # Debe haber 24 horas
+        self.assertEqual(len(horas_labels), 24)
+        self.assertEqual(len(horas_valores), 24)
+
+        # Verificar formato de labels (00:00, 01:00, etc.)
+        self.assertEqual(horas_labels[0], '00:00')
+        self.assertEqual(horas_labels[23], '23:00')
