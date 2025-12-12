@@ -13,6 +13,7 @@
             <a href="{% url 'pos:pos_principal' %}">Punto de Venta</a>
             <a href="{% url 'pos:lista_ventas' %}">Consultar Ventas</a>
             {% if user.profile.puede_gestionar_inventario %}
+            <a href="{% url 'pos:dashboard' %}">Dashboard</a>
             <a href="{% url 'pos:reportes_ventas' %}">Reportes</a>
             <a href="{% url 'perfume_list' %}">Inventario</a>
             {% endif %}
