@@ -1,0 +1,83 @@
+{% extends 'pos/base.html' %}
+
+{% block title %}Caja Registradora - Sistema POS{% endblock %}
+
+{% block content %}
+<h2>Caja Registradora</h2>
+
+<section>
+    <h3>Buscar Producto</h3>
+    <form method="GET" action="{% url 'pos:search_product' %}">
+        {{ search_form.as_p }}
+        <button type="submit">Buscar</button>
+    </form>
+</section>
+
+<hr>
+
+<section>
+    <h3>Carrito de Compra ({{ cart_count }} productos)</h3>
+
+    {% if cart_items %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Código</th>
+                <th>Precio Unit.</th>
+                <th>Cantidad</th>
+                <th>Subtotal</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart_items %}
+            <tr>
+                <td>{{ item.product.nombre }} - {{ item.product.marca }}</td>
+                <td>{{ item.product.codigo_barras }}</td>
+                <td>${{ item.product.precio }}</td>
+                <td>
+                    <form method="POST" action="{% url 'pos:update_cart_quantity' item.product.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" max="{{ item.product.stock_actual }}" style="width:60px;">
+                        <button type="submit">Actualizar</button>
+                    </form>
+                </td>
+                <td>${{ item.subtotal }}</td>
+                <td>
+                    <form method="POST" action="{% url 'pos:remove_from_cart' item.product.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4"><strong>SUBTOTAL:</strong></td>
+                <td colspan="2"><strong>${{ subtotal }}</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <p>
+        <a href="{% url 'pos:checkout' %}"><button>Proceder al Pago</button></a>
+        <a href="{% url 'pos:clear_cart' %}"><button>Vaciar Carrito</button></a>
+    </p>
+    {% else %}
+    <p><em>El carrito está vacío. Busca productos para agregar.</em></p>
+    {% endif %}
+</section>
+
+<hr>
+
+<section>
+    <h3>Acceso Rápido</h3>
+    <ul>
+        <li><a href="{% url 'pos:product_list' %}">Ver todos los productos</a></li>
+        <li><a href="{% url 'pos:sale_list' %}">Ver ventas realizadas</a></li>
+        <li><a href="{% url 'pos:inventory_movement' %}">Registrar movimiento de inventario</a></li>
+    </ul>
+</section>
+{% endblock %}

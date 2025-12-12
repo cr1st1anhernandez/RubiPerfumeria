@@ -1,0 +1,61 @@
+{% extends 'pos/base.html' %}
+
+{% block title %}Lista de Ventas - Sistema POS{% endblock %}
+
+{% block content %}
+<h2>Lista de Ventas</h2>
+
+<p><a href="{% url 'pos:index' %}">&larr; Volver a la Caja</a></p>
+
+<section>
+    <h3>Filtrar por Fecha</h3>
+    <form method="GET">
+        <label for="fecha_desde">Desde:</label>
+        <input type="date" name="fecha_desde" value="{{ request.GET.fecha_desde }}">
+
+        <label for="fecha_hasta">Hasta:</label>
+        <input type="date" name="fecha_hasta" value="{{ request.GET.fecha_hasta }}">
+
+        <button type="submit">Filtrar</button>
+        <a href="{% url 'pos:sale_list' %}"><button type="button">Limpiar</button></a>
+    </form>
+</section>
+
+<hr>
+
+<section>
+    <h3>Ventas ({{ sales.count }} registros)</h3>
+    {% if sales %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Ticket</th>
+                <th>Fecha y Hora</th>
+                <th>Cajero</th>
+                <th>Método de Pago</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+            <tr>
+                <td>{{ sale.numero_ticket }}</td>
+                <td>{{ sale.fecha_hora|date:"d/m/Y H:i" }}</td>
+                <td>{{ sale.cajero.username }}</td>
+                <td>{{ sale.get_metodo_pago_display }}</td>
+                <td>${{ sale.total }}</td>
+                <td>{{ sale.get_estado_display }}</td>
+                <td>
+                    <a href="{% url 'pos:sale_detail' sale.pk %}">Ver Detalle</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p><em>No hay ventas registradas.</em></p>
+    {% endif %}
+</section>
+{% endblock %}

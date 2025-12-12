@@ -407,3 +407,335 @@ class ProductWorkflowSeleniumTests(StaticLiveServerTestCase):
         product.refresh_from_db()
         self.assertEqual(product.nombre, 'Producto Actualizado')
         self.assertEqual(product.precio, Decimal('75.00'))
+
+
+@skipIf(not CHROME_AVAILABLE, "Chrome/Chromium no está instalado. Instala Chrome o Chromium para ejecutar estas pruebas.")
+class POSWorkflowSeleniumTests(StaticLiveServerTestCase):
+    """
+    Pruebas de integración con Selenium para el flujo completo del POS.
+    Simula el proceso completo de una venta desde la caja registradora.
+    
+    NOTA: Estas pruebas requieren que Chrome o Chromium esté instalado en el sistema.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
+
+        try:
+            service = Service(ChromeDriverManager().install())
+            cls.selenium = webdriver.Chrome(service=service, options=chrome_options)
+        except Exception as e:
+            print(f"Error al inicializar Chrome: {e}")
+            raise
+
+        cls.selenium.implicitly_wait(10)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.selenium.quit()
+        super().tearDownClass()
+
+    def setUp(self):
+        """Crear usuario y productos de prueba"""
+        self.user = User.objects.create_user(
+            username='cajero',
+            password='cajero123',
+            first_name='Test',
+            last_name='Cajero'
+        )
+
+        self.product1 = Product.objects.create(
+            codigo_barras='POS001',
+            nombre='Perfume Selenium 1',
+            marca='Marca Selenium',
+            precio=Decimal('100.00'),
+            stock_actual=20,
+            categoria='EDP',
+            activo=True
+        )
+
+        self.product2 = Product.objects.create(
+            codigo_barras='POS002',
+            nombre='Perfume Selenium 2',
+            marca='Marca Selenium',
+            precio=Decimal('75.00'),
+            stock_actual=15,
+            categoria='EDT',
+            activo=True
+        )
+
+    def login(self):
+        """Helper para hacer login"""
+        self.selenium.get(f'{self.live_server_url}/login/')
+        
+        username_input = WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.NAME, "username"))
+        )
+        password_input = self.selenium.find_element(By.NAME, "password")
+        
+        username_input.send_keys('cajero')
+        password_input.send_keys('cajero123')
+        
+        login_button = self.selenium.find_element(By.CSS_SELECTOR, 'input[type="submit"]')
+        login_button.click()
+
+    def test_pos_access_requires_login(self):
+        """Prueba que el POS requiere login"""
+        self.selenium.get(f'{self.live_server_url}/pos/')
+        
+        # Debe redirigir a login
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.NAME, "username"))
+        )
+        self.assertIn('/login/', self.selenium.current_url)
+
+    def test_complete_sale_workflow(self):
+        """Prueba el flujo completo de una venta"""
+        # Login
+        self.login()
+
+        # Ir al POS
+        self.selenium.get(f'{self.live_server_url}/pos/')
+
+        # Verificar que estamos en el POS
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "h2"))
+        )
+        self.assertIn('Caja Registradora', self.selenium.page_source)
+
+        # Buscar producto
+        search_input = self.selenium.find_element(By.NAME, "search")
+        search_input.send_keys('POS001')
+        
+        search_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
+        search_button.click()
+
+        # Esperar resultados de búsqueda
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        # Verificar que aparece el producto
+        self.assertIn('Perfume Selenium 1', self.selenium.page_source)
+
+        # Agregar al carrito
+        cantidad_input = self.selenium.find_element(By.CSS_SELECTOR, 'input[name="cantidad"]')
+        cantidad_input.clear()
+        cantidad_input.send_keys('2')
+
+        add_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
+        add_button.click()
+
+        # Esperar redirección al POS
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "h3"))
+        )
+
+        # Verificar que el producto está en el carrito
+        self.assertIn('Perfume Selenium 1', self.selenium.page_source)
+        self.assertIn('200.00', self.selenium.page_source)  # 2 x 100
+
+        # Proceder al checkout
+        checkout_link = self.selenium.find_element(By.LINK_TEXT, 'Proceder al Pago')
+        checkout_link.click()
+
+        # Esperar página de checkout
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "form"))
+        )
+
+        # Seleccionar método de pago
+        efectivo_radio = self.selenium.find_element(By.CSS_SELECTOR, 'input[value="EFECTIVO"]')
+        efectivo_radio.click()
+
+        # Completar venta
+        submit_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
+        submit_button.click()
+
+        # Esperar página de detalle de venta
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "h2"))
+        )
+
+        # Verificar que la venta se completó
+        self.assertIn('Detalle de Venta', self.selenium.page_source)
+        self.assertIn('Perfume Selenium 1', self.selenium.page_source)
+
+        # Verificar que la venta se creó en la base de datos
+        self.assertEqual(Sales.objects.count(), 1)
+        venta = Sales.objects.first()
+        self.assertEqual(venta.total, Decimal('200.00'))
+        self.assertEqual(venta.cajero, self.user)
+
+        # Verificar que el stock se redujo
+        self.product1.refresh_from_db()
+        self.assertEqual(self.product1.stock_actual, 18)  # 20 - 2
+
+    def test_add_multiple_products_to_cart(self):
+        """Prueba agregar múltiples productos al carrito"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/')
+
+        # Ir a lista de productos
+        products_link = self.selenium.find_element(By.LINK_TEXT, 'Ver todos los productos')
+        products_link.click()
+
+        # Esperar que cargue la lista
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        # Agregar primer producto
+        cantidad_inputs = self.selenium.find_elements(By.CSS_SELECTOR, 'input[name="cantidad"]')
+        cantidad_inputs[0].clear()
+        cantidad_inputs[0].send_keys('2')
+
+        add_buttons = self.selenium.find_elements(By.CSS_SELECTOR, 'button[type="submit"]')
+        add_buttons[0].click()
+
+        # Esperar mensaje de éxito
+        time.sleep(1)
+
+        # Volver a productos
+        self.selenium.get(f'{self.live_server_url}/pos/products/')
+
+        # Agregar segundo producto
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        cantidad_inputs = self.selenium.find_elements(By.CSS_SELECTOR, 'input[name="cantidad"]')
+        cantidad_inputs[1].clear()
+        cantidad_inputs[1].send_keys('3')
+
+        add_buttons = self.selenium.find_elements(By.CSS_SELECTOR, 'button[type="submit"]')
+        add_buttons[1].click()
+
+        # Ir a la caja
+        self.selenium.get(f'{self.live_server_url}/pos/')
+
+        # Verificar que ambos productos están en el carrito
+        self.assertIn('Perfume Selenium 1', self.selenium.page_source)
+        self.assertIn('Perfume Selenium 2', self.selenium.page_source)
+
+    def test_update_cart_quantity(self):
+        """Prueba actualizar la cantidad de un producto en el carrito"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/products/')
+
+        # Agregar producto al carrito
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        add_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
+        add_button.click()
+
+        # Ir a la caja
+        self.selenium.get(f'{self.live_server_url}/pos/')
+
+        # Actualizar cantidad
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        cantidad_input = self.selenium.find_element(By.CSS_SELECTOR, 'input[type="number"]')
+        cantidad_input.clear()
+        cantidad_input.send_keys('5')
+
+        update_button = self.selenium.find_element(By.XPATH, '//button[text()="Actualizar"]')
+        update_button.click()
+
+        # Esperar mensaje de éxito
+        time.sleep(1)
+
+        # Verificar que la cantidad se actualizó
+        cantidad_input = self.selenium.find_element(By.CSS_SELECTOR, 'input[type="number"]')
+        self.assertEqual(cantidad_input.get_attribute('value'), '5')
+
+    def test_remove_product_from_cart(self):
+        """Prueba eliminar un producto del carrito"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/products/')
+
+        # Agregar producto al carrito
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        add_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
+        add_button.click()
+
+        # Ir a la caja
+        self.selenium.get(f'{self.live_server_url}/pos/')
+
+        # Verificar que el producto está en el carrito
+        self.assertIn('Perfume Selenium 1', self.selenium.page_source)
+
+        # Eliminar producto
+        remove_button = self.selenium.find_element(By.XPATH, '//button[text()="Eliminar"]')
+        remove_button.click()
+
+        # Esperar mensaje
+        time.sleep(1)
+
+        # Verificar que el carrito está vacío
+        self.assertIn('vacío', self.selenium.page_source)
+
+    def test_view_sales_list(self):
+        """Prueba ver la lista de ventas"""
+        # Crear una venta de prueba
+        venta = Sales.objects.create(
+            total=Decimal('100.00'),
+            metodo_pago='EFECTIVO',
+            cajero=self.user
+        )
+
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/sales/')
+
+        # Verificar que la venta aparece
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        self.assertIn(venta.numero_ticket, self.selenium.page_source)
+        self.assertIn('100.00', self.selenium.page_source)
+
+    def test_view_sale_detail(self):
+        """Prueba ver el detalle de una venta"""
+        from .models import SaleDetails
+
+        # Crear una venta con detalles
+        venta = Sales.objects.create(
+            total=Decimal('200.00'),
+            metodo_pago='TARJETA',
+            cajero=self.user
+        )
+        SaleDetails.objects.create(
+            venta=venta,
+            producto=self.product1,
+            cantidad=2,
+            precio_unitario=self.product1.precio
+        )
+
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/sales/{venta.pk}/')
+
+        # Verificar información de la venta
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "h2"))
+        )
+
+        self.assertIn(venta.numero_ticket, self.selenium.page_source)
+        self.assertIn('Perfume Selenium 1', self.selenium.page_source)
+        self.assertIn('200.00', self.selenium.page_source)
+        self.assertIn('TARJETA', self.selenium.page_source)
