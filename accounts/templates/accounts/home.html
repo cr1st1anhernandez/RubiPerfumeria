@@ -6,6 +6,17 @@
 {% if user.is_authenticated %}
     <h2>Bienvenido, {{ user.username }}</h2>
 
+    <div style="background: #e3f2fd; padding: 20px; margin: 20px 0; border-radius: 8px;">
+        <h3>🚀 Accesos Rápidos</h3>
+        <p style="margin: 10px 0;">
+            <a href="{% url 'pos:index' %}" style="background: #2196F3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px;">💰 Ir a Caja Registradora</a>
+            <a href="{% url 'pos:sales_report' %}" style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px;">📑 Ver Reportes</a>
+            {% if user.userprofile and user.userprofile.rol in 'ADMINISTRADOR,SUPERVISOR' %}
+            <a href="{% url 'pos:dashboard' %}" style="background: #FF9800; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px;">📈 Ir al Dashboard</a>
+            {% endif %}
+        </p>
+    </div>
+
     <h3>Información del Usuario</h3>
     <table border="1">
         <tr>

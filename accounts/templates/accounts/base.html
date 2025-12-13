@@ -7,15 +7,22 @@
 </head>
 <body>
     <header>
-        <h1>RubiPerfumeria</h1>
+        <h1>RubiPerfumeria - Sistema POS</h1>
         <nav>
             {% if user.is_authenticated %}
-                <span>Usuario: {{ user.username }}</span>
-                <a href="{% url 'home' %}">Inicio</a>
-                <a href="{% url 'perfume_list' %}">Lista de Perfumes</a>
-                <a href="{% url 'perfume_create' %}">Crear Perfume</a>
-                <a href="{% url 'logout' %}">Cerrar Sesión</a>
-                <a href="/admin/">Admin</a>
+                <a href="{% url 'home' %}">🏠 Inicio</a> |
+                <a href="{% url 'pos:index' %}">💰 Caja</a> |
+                <a href="{% url 'pos:product_list' %}">📦 Productos</a> |
+                <a href="{% url 'pos:sale_list' %}">🛒 Ventas</a> |
+                <a href="{% url 'pos:inventory_movement' %}">📊 Inventario</a> |
+                <a href="{% url 'pos:sales_report' %}">📑 Reporte Ventas</a> |
+                <a href="{% url 'pos:inventory_report' %}">📋 Reporte Inventario</a> |
+                {% if user.is_authenticated and user.userprofile and user.userprofile.rol in 'ADMINISTRADOR,SUPERVISOR' %}
+                <a href="{% url 'pos:dashboard' %}">📈 Dashboard</a> |
+                {% endif %}
+                <a href="{% url 'admin:index' %}">⚙️ Admin</a> |
+                👤 <strong>{{ user.username }}</strong> |
+                <a href="{% url 'logout' %}">🚪 Salir</a>
             {% else %}
                 <a href="{% url 'login' %}">Iniciar Sesión</a>
             {% endif %}
