@@ -4,21 +4,25 @@
 
 {% block content %}
 {% if user.is_authenticated %}
-    <h2>Bienvenido, {{ user.username }}</h2>
+    <div class="content-wrapper">
+        <h2>Bienvenido, {{ user.username }}</h2>
 
-    <div style="background: #e3f2fd; padding: 20px; margin: 20px 0; border-radius: 8px;">
-        <h3>🚀 Accesos Rápidos</h3>
-        <p style="margin: 10px 0;">
-            <a href="{% url 'pos:index' %}" style="background: #2196F3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px;">💰 Ir a Caja Registradora</a>
-            <a href="{% url 'pos:sales_report' %}" style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px;">📑 Ver Reportes</a>
-            {% if user.userprofile and user.userprofile.rol in 'ADMINISTRADOR,SUPERVISOR' %}
-            <a href="{% url 'pos:dashboard' %}" style="background: #FF9800; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px;">📈 Ir al Dashboard</a>
-            {% endif %}
-        </p>
+        <div class="quick-actions">
+            <h3>🚀 Accesos Rápidos</h3>
+            <div class="button-group">
+                <a href="{% url 'pos:index' %}" class="button">💰 Ir a Caja Registradora</a>
+                <a href="{% url 'pos:sales_report' %}" class="button button-success">📑 Ver Reportes de Ventas</a>
+                <a href="{% url 'pos:inventory_report' %}" class="button button-success">📋 Ver Reporte de Inventario</a>
+                {% if user.userprofile and user.userprofile.rol in 'ADMINISTRADOR,SUPERVISOR' %}
+                <a href="{% url 'pos:dashboard' %}" class="button button-secondary">📈 Ir al Dashboard</a>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
-    <h3>Información del Usuario</h3>
-    <table border="1">
+    <div class="content-wrapper">
+        <h3>Información del Usuario</h3>
+        <table>
         <tr>
             <th>Usuario</th>
             <td>{{ user.username }}</td>
@@ -47,25 +51,26 @@
             <th>Fecha de Registro</th>
             <td>{{ user.date_joined|date:"d/m/Y" }}</td>
         </tr>
-    </table>
+        </table>
+    </div>
 
-    <br>
+    <div class="content-wrapper">
+        <h3>Características de Seguridad Implementadas</h3>
+        <ul>
+            <li>Autenticación segura con Django</li>
+            <li>Protección CSRF activada</li>
+            <li>Sesiones seguras con cookies HttpOnly</li>
+            <li>Cookies SameSite para protección adicional</li>
+            <li>Contraseñas hasheadas con PBKDF2/Argon2</li>
+            <li>Validación de usuarios activos</li>
+            <li>Protección XSS con headers de seguridad</li>
+            <li>Funcionalidad "Recordarme" implementada</li>
+        </ul>
 
-    <h3>Características de Seguridad Implementadas</h3>
-    <ul>
-        <li>Autenticación segura con Django</li>
-        <li>Protección CSRF activada</li>
-        <li>Sesiones seguras con cookies HttpOnly</li>
-        <li>Cookies SameSite para protección adicional</li>
-        <li>Contraseñas hasheadas con PBKDF2/Argon2</li>
-        <li>Validación de usuarios activos</li>
-        <li>Protección XSS con headers de seguridad</li>
-        <li>Funcionalidad "Recordarme" implementada</li>
-    </ul>
-
-    {% if user.is_staff %}
-        <p><a href="{% url 'admin:index' %}">Ir al Panel de Administración</a></p>
-    {% endif %}
+        {% if user.is_staff %}
+            <p><a href="{% url 'admin:index' %}" class="button button-secondary">⚙️ Ir al Panel de Administración</a></p>
+        {% endif %}
+    </div>
 
 {% else %}
     <h2>Bienvenido a RubiPerfumeria</h2>
