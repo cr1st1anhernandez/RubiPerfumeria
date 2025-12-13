@@ -357,9 +357,10 @@ def sales_report_view(request):
         if estado:
             sales = sales.filter(estado=estado)
 
-    # Calcular totales
+    # Calcular totales usando agregación de base de datos
+    from django.db.models import Sum as DBSum, Count
     total_sales = sales.count()
-    total_amount = sum(sale.total for sale in sales)
+    total_amount = sales.aggregate(total=DBSum('total'))['total'] or Decimal('0.00')
 
     # Verificar si se solicita exportación
     format_type = request.GET.get('format')
@@ -411,10 +412,20 @@ def inventory_report_view(request):
         if solo_activos:
             products = products.filter(activo=True)
 
-    # Calcular totales
+    # Calcular totales usando agregación de base de datos
+    from django.db.models import Sum as DBSum, Count, ExpressionWrapper, DecimalField
     total_products = products.count()
-    low_stock_count = sum(1 for p in products if p.requiere_reabastecimiento)
-    total_value = sum(p.valor_inventario for p in products)
+
+    # Contar productos con bajo stock usando la base de datos
+    low_stock_count = products.filter(stock_actual__lte=F('stock_minimo')).count()
+
+    # Calcular valor total del inventario
+    total_value = products.aggregate(
+        total=DBSum(ExpressionWrapper(
+            F('precio') * F('stock_actual'),
+            output_field=DecimalField()
+        ))
+    )['total'] or Decimal('0.00')
 
     # Verificar si se solicita exportación
     format_type = request.GET.get('format')
