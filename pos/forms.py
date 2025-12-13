@@ -85,3 +85,70 @@ class ProductFilterForm(forms.Form):
         initial=False,
         label='Solo productos con bajo stock'
     )
+
+
+class SalesReportFilterForm(forms.Form):
+    """Formulario para filtrar el reporte de ventas"""
+    fecha_desde = forms.DateField(
+        required=False,
+        label='Desde',
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+    fecha_hasta = forms.DateField(
+        required=False,
+        label='Hasta',
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+    cajero = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        label='Cajero',
+        empty_label='Todos'
+    )
+    metodo_pago = forms.ChoiceField(
+        choices=[('', 'Todos')] + list(Sales.METODO_PAGO_CHOICES),
+        required=False,
+        label='Método de Pago'
+    )
+    estado = forms.ChoiceField(
+        choices=[('', 'Todos')] + list(Sales.ESTADO_CHOICES),
+        required=False,
+        label='Estado'
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.fields['cajero'].queryset = User.objects.filter(
+            ventas_realizadas__isnull=False
+        ).distinct()
+
+
+class InventoryReportFilterForm(forms.Form):
+    """Formulario para filtrar el reporte de inventario"""
+    categoria = forms.ChoiceField(
+        choices=[('', 'Todas')] + list(Product.CATEGORIA_CHOICES),
+        required=False,
+        label='Categoría'
+    )
+    genero = forms.ChoiceField(
+        choices=[('', 'Todos')] + list(Product.GENERO_CHOICES),
+        required=False,
+        label='Género'
+    )
+    marca = forms.CharField(
+        max_length=100,
+        required=False,
+        label='Marca'
+    )
+    solo_bajo_stock = forms.BooleanField(
+        required=False,
+        initial=False,
+        label='Solo productos con bajo stock'
+    )
+    solo_activos = forms.BooleanField(
+        required=False,
+        initial=True,
+        label='Solo productos activos'
+    )

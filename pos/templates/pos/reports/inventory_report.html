@@ -1,0 +1,80 @@
+{% extends 'pos/reports/base.html' %}
+
+{% block title %}Reporte de Inventario - Sistema POS{% endblock %}
+
+{% block content %}
+<h2>Reporte de Inventario</h2>
+
+<section>
+    <h3>Filtros</h3>
+    <form method="GET">
+        <table>
+            {{ form.as_table }}
+        </table>
+        <p>
+            <button type="submit">Filtrar</button>
+            <button type="submit" name="format" value="pdf">Descargar PDF</button>
+            <button type="submit" name="format" value="excel">Descargar Excel</button>
+        </p>
+    </form>
+</section>
+
+<hr>
+
+<section>
+    <h3>Resumen</h3>
+    <ul>
+        <li><strong>Total de productos:</strong> {{ total_products }}</li>
+        <li><strong>Productos con bajo stock:</strong> {{ low_stock_count }}</li>
+        <li><strong>Valor total del inventario:</strong> ${{ total_value }}</li>
+    </ul>
+</section>
+
+<hr>
+
+<section>
+    <h3>Productos (mostrando primeros {{ products.count }} de {{ total_products }})</h3>
+    {% if products %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th>Marca</th>
+                <th>Categoría</th>
+                <th>Stock</th>
+                <th>Stock Mín.</th>
+                <th>Precio</th>
+                <th>Valor Total</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.codigo_barras }}</td>
+                <td>{{ product.nombre }}</td>
+                <td>{{ product.marca }}</td>
+                <td>{{ product.get_categoria_display }}</td>
+                <td>{{ product.stock_actual }}</td>
+                <td>{{ product.stock_minimo }}</td>
+                <td>${{ product.precio }}</td>
+                <td>${{ product.valor_inventario }}</td>
+                <td>
+                    {% if product.requiere_reabastecimiento %}
+                    <strong>BAJO STOCK</strong>
+                    {% elif product.activo %}
+                    Activo
+                    {% else %}
+                    Inactivo
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p><em>No hay productos para mostrar.</em></p>
+    {% endif %}
+</section>
+{% endblock %}

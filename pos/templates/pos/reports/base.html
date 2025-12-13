@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Reportes POS - RubiPerfumeria{% endblock %}</title>
+</head>
+<body>
+    <header>
+        <h1>RubiPerfumeria - Sistema de Reportes</h1>
+        <nav>
+            <a href="{% url 'home' %}">Inicio</a> |
+            <a href="{% url 'pos:index' %}">POS</a> |
+            <a href="{% url 'pos:sales_report' %}">Reporte de Ventas</a> |
+            <a href="{% url 'pos:inventory_report' %}">Reporte de Inventario</a> |
+            <a href="{% url 'admin:index' %}">Admin</a> |
+            Usuario: <strong>{{ user.username }}</strong> |
+            <a href="{% url 'logout' %}">Cerrar Sesión</a>
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %}
+        <div>
+            <h3>Mensajes:</h3>
+            <ul>
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <hr>
+        <p>RubiPerfumeria &copy; 2025 - Sistema de Reportes</p>
+    </footer>
+</body>
+</html>

@@ -34,4 +34,8 @@ urlpatterns = [
     path('dashboard/api/top-products/', views.dashboard_api_top_products, name='dashboard_api_top_products'),
     path('dashboard/api/sales-by-category/', views.dashboard_api_sales_by_category, name='dashboard_api_sales_by_category'),
     path('dashboard/api/sales-by-hour/', views.dashboard_api_sales_by_hour, name='dashboard_api_sales_by_hour'),
+
+    # Reportes
+    path('reports/sales/', views.sales_report_view, name='sales_report'),
+    path('reports/inventory/', views.inventory_report_view, name='inventory_report'),
 ]
