@@ -3,77 +3,83 @@
 {% block title %}Lista de Productos - Sistema POS{% endblock %}
 
 {% block content %}
-<h2>Lista de Productos</h2>
+<div class="content-wrapper">
+    <h2>📦 Lista de Productos</h2>
 
-<p><a href="{% url 'pos:index' %}">&larr; Volver a la Caja</a></p>
+    <p><a href="{% url 'pos:index' %}">&larr; Volver a la Caja</a></p>
 
-<section>
-    <h3>Filtros</h3>
-    <form method="GET">
-        <table>
-            {{ filter_form.as_table }}
-        </table>
-        <button type="submit">Filtrar</button>
-        <a href="{% url 'pos:product_list' %}"><button type="button">Limpiar Filtros</button></a>
-    </form>
-</section>
+    <div class="card">
+        <div class="card-header">🔍 Filtros</div>
+        <div class="card-body">
+            <form method="GET">
+                <table>
+                    {{ filter_form.as_table }}
+                </table>
+                <button type="submit" class="button">Filtrar</button>
+                <a href="{% url 'pos:product_list' %}" class="button button-secondary">Limpiar Filtros</a>
+            </form>
+        </div>
+    </div>
 
-<hr>
-
-<section>
-    <h3>Productos ({{ products.count }} encontrados)</h3>
-    {% if products %}
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Marca</th>
-                <th>Categoría</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Estado</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for product in products %}
-            <tr>
-                <td>{{ product.codigo_barras }}</td>
-                <td>{{ product.nombre }}</td>
-                <td>{{ product.marca }}</td>
-                <td>{{ product.get_categoria_display }}</td>
-                <td>${{ product.precio }}</td>
-                <td>
-                    {{ product.stock_actual }}
-                    {% if product.requiere_reabastecimiento %}
-                    <strong>(¡Bajo stock!)</strong>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if product.activo %}
-                    Activo
-                    {% else %}
-                    <em>Inactivo</em>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if product.disponible %}
-                    <form method="POST" action="{% url 'pos:add_to_cart' product.id %}" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="number" name="cantidad" value="1" min="1" max="{{ product.stock_actual }}" style="width:50px;">
-                        <button type="submit">Agregar</button>
-                    </form>
-                    {% else %}
-                    <em>No disponible</em>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p><em>No hay productos que mostrar.</em></p>
-    {% endif %}
-</section>
+    <div class="card">
+        <div class="card-header">📋 Productos
+            <span class="badge badge-primary">{{ products.count }} encontrado{{ products.count|pluralize }}</span>
+        </div>
+        <div class="card-body">
+            {% if products %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Marca</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.codigo_barras }}</td>
+                        <td>{{ product.nombre }}</td>
+                        <td>{{ product.marca }}</td>
+                        <td>{{ product.get_categoria_display }}</td>
+                        <td>${{ product.precio }}</td>
+                        <td>
+                            {{ product.stock_actual }}
+                            {% if product.requiere_reabastecimiento %}
+                            <span class="badge badge-warning">¡Bajo stock!</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.activo %}
+                            <span class="badge badge-success">Activo</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.disponible %}
+                            <form method="POST" action="{% url 'pos:add_to_cart' product.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="number" name="cantidad" value="1" min="1" max="{{ product.stock_actual }}" style="width:70px;">
+                                <button type="submit" class="button button-small">Agregar</button>
+                            </form>
+                            {% else %}
+                            <em>No disponible</em>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p><em>No hay productos que mostrar.</em></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}

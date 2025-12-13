@@ -3,30 +3,45 @@
 {% block title %}Eliminar Perfume - RubiPerfumeria{% endblock %}
 
 {% block content %}
-<h2>Confirmar Eliminación</h2>
+<div class="content-wrapper">
+    <h2>⚠️ Confirmar Eliminación</h2>
 
-<p>¿Está seguro que desea eliminar el siguiente perfume?</p>
+    <div class="card">
+        <div class="card-header" style="background: #f8d7da; color: #721c24;">
+            🗑️ Advertencia: Esta acción es permanente
+        </div>
+        <div class="card-body">
+            <p><strong>¿Está seguro que desea eliminar el siguiente perfume?</strong></p>
 
-<dl>
-    <dt>Nombre:</dt>
-    <dd>{{ perfume.nombre }}</dd>
+            <table style="margin-top: 20px;">
+                <tr>
+                    <th>Nombre:</th>
+                    <td>{{ perfume.nombre }}</td>
+                </tr>
+                <tr>
+                    <th>Marca:</th>
+                    <td>{{ perfume.marca }}</td>
+                </tr>
+                <tr>
+                    <th>Tipo:</th>
+                    <td>{{ perfume.get_tipo_display }}</td>
+                </tr>
+                <tr>
+                    <th>Volumen:</th>
+                    <td>{{ perfume.volumen }} ml</td>
+                </tr>
+                <tr>
+                    <th>Precio:</th>
+                    <td>${{ perfume.precio }}</td>
+                </tr>
+            </table>
 
-    <dt>Marca:</dt>
-    <dd>{{ perfume.marca }}</dd>
-
-    <dt>Tipo:</dt>
-    <dd>{{ perfume.get_tipo_display }}</dd>
-
-    <dt>Volumen:</dt>
-    <dd>{{ perfume.volumen }} ml</dd>
-
-    <dt>Precio:</dt>
-    <dd>${{ perfume.precio }}</dd>
-</dl>
-
-<form method="post">
-    {% csrf_token %}
-    <button type="submit">Sí, eliminar</button>
-    <a href="{% url 'perfume_detail' perfume.pk %}">Cancelar</a>
-</form>
+            <form method="post" style="margin-top: 20px;">
+                {% csrf_token %}
+                <button type="submit" class="button button-danger">✓ Sí, eliminar definitivamente</button>
+                <a href="{% url 'perfume_detail' perfume.pk %}" class="button button-secondary">✗ Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -3,65 +3,71 @@
 {% block title %}Reporte de Ventas - Sistema POS{% endblock %}
 
 {% block content %}
-<h2>Reporte de Ventas</h2>
+<div class="content-wrapper">
+    <h2>📑 Reporte de Ventas</h2>
 
-<section>
-    <h3>Filtros</h3>
-    <form method="GET">
-        <table>
-            {{ form.as_table }}
-        </table>
-        <p>
-            <button type="submit">Filtrar</button>
-            <button type="submit" name="format" value="pdf">Descargar PDF</button>
-            <button type="submit" name="format" value="excel">Descargar Excel</button>
-        </p>
-    </form>
-</section>
+    <div class="card">
+        <div class="card-header">🔍 Filtros</div>
+        <div class="card-body">
+            <form method="GET">
+                <table>
+                    {{ form.as_table }}
+                </table>
+                <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="submit" class="button">Filtrar</button>
+                    <button type="submit" name="format" value="pdf" class="button button-danger">📄 Descargar PDF</button>
+                    <button type="submit" name="format" value="excel" class="button button-success">📊 Descargar Excel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<hr>
+    <div class="card">
+        <div class="card-header">📈 Resumen</div>
+        <div class="card-body">
+            <ul>
+                <li><strong>Total de ventas:</strong> <span class="badge badge-primary">{{ total_sales }}</span></li>
+                <li><strong>Monto total:</strong> <span class="badge badge-success">${{ total_amount }}</span></li>
+            </ul>
+        </div>
+    </div>
 
-<section>
-    <h3>Resumen</h3>
-    <ul>
-        <li><strong>Total de ventas:</strong> {{ total_sales }}</li>
-        <li><strong>Monto total:</strong> ${{ total_amount }}</li>
-    </ul>
-</section>
-
-<hr>
-
-<section>
-    <h3>Ventas (mostrando primeras {{ sales.count }} de {{ total_sales }})</h3>
-    {% if sales %}
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Ticket</th>
-                <th>Fecha y Hora</th>
-                <th>Cajero</th>
-                <th>Método de Pago</th>
-                <th>Total</th>
-                <th>Descuento</th>
-                <th>Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for sale in sales %}
-            <tr>
-                <td>{{ sale.numero_ticket }}</td>
-                <td>{{ sale.fecha_hora|date:"d/m/Y H:i" }}</td>
-                <td>{{ sale.cajero.username }}</td>
-                <td>{{ sale.get_metodo_pago_display }}</td>
-                <td>${{ sale.total }}</td>
-                <td>${{ sale.descuento }}</td>
-                <td>{{ sale.get_estado_display }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p><em>No hay ventas para mostrar.</em></p>
-    {% endif %}
-</section>
+    <div class="card">
+        <div class="card-header">🛒 Ventas
+            <span class="badge badge-info">mostrando {{ sales.count }} de {{ total_sales }}</span>
+        </div>
+        <div class="card-body">
+            {% if sales %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Fecha y Hora</th>
+                        <th>Cajero</th>
+                        <th>Método de Pago</th>
+                        <th>Total</th>
+                        <th>Descuento</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td>{{ sale.numero_ticket }}</td>
+                        <td>{{ sale.fecha_hora|date:"d/m/Y H:i" }}</td>
+                        <td>{{ sale.cajero.username }}</td>
+                        <td>{{ sale.get_metodo_pago_display }}</td>
+                        <td>${{ sale.total }}</td>
+                        <td>${{ sale.descuento }}</td>
+                        <td>{{ sale.get_estado_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p><em>No hay ventas para mostrar.</em></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}

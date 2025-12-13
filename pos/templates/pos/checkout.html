@@ -3,53 +3,57 @@
 {% block title %}Completar Venta - Sistema POS{% endblock %}
 
 {% block content %}
-<h2>Completar Venta</h2>
+<div class="content-wrapper">
+    <h2>💳 Completar Venta</h2>
 
-<p><a href="{% url 'pos:index' %}">&larr; Volver a la Caja</a></p>
+    <p><a href="{% url 'pos:index' %}">&larr; Volver a la Caja</a></p>
 
-<section>
-    <h3>Resumen de la Venta</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Precio Unit.</th>
-                <th>Cantidad</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in cart_items %}
-            <tr>
-                <td>{{ item.product.nombre }} - {{ item.product.marca }}</td>
-                <td>${{ item.precio_unitario }}</td>
-                <td>{{ item.cantidad }}</td>
-                <td>${{ item.subtotal }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="3"><strong>SUBTOTAL:</strong></td>
-                <td><strong>${{ subtotal }}</strong></td>
-            </tr>
-        </tfoot>
-    </table>
-</section>
+    <div class="card">
+        <div class="card-header">📋 Resumen de la Venta</div>
+        <div class="card-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Precio Unit.</th>
+                        <th>Cantidad</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                    <tr>
+                        <td>{{ item.product.nombre }} - {{ item.product.marca }}</td>
+                        <td>${{ item.precio_unitario }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>${{ item.subtotal }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3"><strong>SUBTOTAL:</strong></td>
+                        <td><strong>${{ subtotal }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
 
-<hr>
-
-<section>
-    <h3>Información de Pago</h3>
-    <form method="POST">
-        {% csrf_token %}
-        <table>
-            {{ form.as_table }}
-        </table>
-        <p>
-            <button type="submit">Completar Venta</button>
-            <a href="{% url 'pos:index' %}"><button type="button">Cancelar</button></a>
-        </p>
-    </form>
-</section>
+    <div class="card">
+        <div class="card-header">💰 Información de Pago</div>
+        <div class="card-body">
+            <form method="POST">
+                {% csrf_token %}
+                <table>
+                    {{ form.as_table }}
+                </table>
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="button button-success">✓ Completar Venta</button>
+                    <a href="{% url 'pos:index' %}" class="button button-danger">✗ Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

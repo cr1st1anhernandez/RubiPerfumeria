@@ -3,90 +3,94 @@
 {% block title %}Detalle de Venta - Sistema POS{% endblock %}
 
 {% block content %}
-<h2>Detalle de Venta</h2>
+<div class="content-wrapper">
+    <h2>🧾 Detalle de Venta</h2>
 
-<p>
-    <a href="{% url 'pos:sale_list' %}">&larr; Volver a Ventas</a> |
-    <a href="{% url 'pos:index' %}">Ir a Caja</a>
-</p>
+    <p>
+        <a href="{% url 'pos:sale_list' %}">&larr; Volver a Ventas</a> |
+        <a href="{% url 'pos:index' %}">Ir a Caja</a>
+    </p>
 
-<section>
-    <h3>Información de la Venta</h3>
-    <table border="1">
-        <tr>
-            <th>Número de Ticket:</th>
-            <td>{{ sale.numero_ticket }}</td>
-        </tr>
-        <tr>
-            <th>Fecha y Hora:</th>
-            <td>{{ sale.fecha_hora|date:"d/m/Y H:i:s" }}</td>
-        </tr>
-        <tr>
-            <th>Cajero:</th>
-            <td>{{ sale.cajero.get_full_name|default:sale.cajero.username }}</td>
-        </tr>
-        <tr>
-            <th>Método de Pago:</th>
-            <td>{{ sale.get_metodo_pago_display }}</td>
-        </tr>
-        <tr>
-            <th>Estado:</th>
-            <td>{{ sale.get_estado_display }}</td>
-        </tr>
-        <tr>
-            <th>Subtotal:</th>
-            <td>${{ sale.subtotal }}</td>
-        </tr>
-        <tr>
-            <th>Descuento:</th>
-            <td>${{ sale.descuento }}</td>
-        </tr>
-        <tr>
-            <th><strong>TOTAL:</strong></th>
-            <td><strong>${{ sale.total }}</strong></td>
-        </tr>
-        {% if sale.notas %}
-        <tr>
-            <th>Notas:</th>
-            <td>{{ sale.notas }}</td>
-        </tr>
-        {% endif %}
-    </table>
-</section>
+    <div class="card">
+        <div class="card-header">📋 Información de la Venta</div>
+        <div class="card-body">
+            <table>
+                <tr>
+                    <th>Número de Ticket:</th>
+                    <td>{{ sale.numero_ticket }}</td>
+                </tr>
+                <tr>
+                    <th>Fecha y Hora:</th>
+                    <td>{{ sale.fecha_hora|date:"d/m/Y H:i:s" }}</td>
+                </tr>
+                <tr>
+                    <th>Cajero:</th>
+                    <td>{{ sale.cajero.get_full_name|default:sale.cajero.username }}</td>
+                </tr>
+                <tr>
+                    <th>Método de Pago:</th>
+                    <td>{{ sale.get_metodo_pago_display }}</td>
+                </tr>
+                <tr>
+                    <th>Estado:</th>
+                    <td>{{ sale.get_estado_display }}</td>
+                </tr>
+                <tr>
+                    <th>Subtotal:</th>
+                    <td>${{ sale.subtotal }}</td>
+                </tr>
+                <tr>
+                    <th>Descuento:</th>
+                    <td>${{ sale.descuento }}</td>
+                </tr>
+                <tr>
+                    <th><strong>TOTAL:</strong></th>
+                    <td><strong>${{ sale.total }}</strong></td>
+                </tr>
+                {% if sale.notas %}
+                <tr>
+                    <th>Notas:</th>
+                    <td>{{ sale.notas }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
 
-<hr>
-
-<section>
-    <h3>Productos Vendidos</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Código</th>
-                <th>Precio Unit.</th>
-                <th>Cantidad</th>
-                <th>Descuento</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for detail in details %}
-            <tr>
-                <td>{{ detail.producto.nombre }} - {{ detail.producto.marca }}</td>
-                <td>{{ detail.producto.codigo_barras }}</td>
-                <td>${{ detail.precio_unitario }}</td>
-                <td>{{ detail.cantidad }}</td>
-                <td>${{ detail.descuento_aplicado }}</td>
-                <td>${{ detail.subtotal }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="3"><strong>Total de Productos:</strong></td>
-                <td colspan="3"><strong>{{ sale.cantidad_productos }}</strong></td>
-            </tr>
-        </tfoot>
-    </table>
-</section>
+    <div class="card">
+        <div class="card-header">🛍️ Productos Vendidos</div>
+        <div class="card-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Código</th>
+                        <th>Precio Unit.</th>
+                        <th>Cantidad</th>
+                        <th>Descuento</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in details %}
+                    <tr>
+                        <td>{{ detail.producto.nombre }} - {{ detail.producto.marca }}</td>
+                        <td>{{ detail.producto.codigo_barras }}</td>
+                        <td>${{ detail.precio_unitario }}</td>
+                        <td>{{ detail.cantidad }}</td>
+                        <td>${{ detail.descuento_aplicado }}</td>
+                        <td>${{ detail.subtotal }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3"><strong>Total de Productos:</strong></td>
+                        <td colspan="3"><strong>{{ sale.cantidad_productos }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

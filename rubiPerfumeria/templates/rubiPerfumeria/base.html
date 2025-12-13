@@ -4,14 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}RubiPerfumeria{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'pos/css/style.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <header>
-        <h1>RubiPerfumeria</h1>
+        <h1>RubiPerfumeria - Sistema POS</h1>
         <nav>
-            <a href="{% url 'perfume_list' %}">Lista de Perfumes</a>
-            <a href="{% url 'perfume_create' %}">Crear Perfume</a>
-            <a href="/admin/">Admin</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'home' %}">🏠 Inicio</a> |
+                <a href="{% url 'pos:index' %}">💰 Caja</a> |
+                <a href="{% url 'perfume_list' %}">💐 Perfumes (Legacy)</a> |
+                <a href="{% url 'perfume_create' %}">➕ Crear Perfume</a> |
+                <a href="{% url 'admin:index' %}">⚙️ Admin</a> |
+                👤 <strong>{{ user.username }}</strong> |
+                <a href="{% url 'logout' %}">🚪 Salir</a>
+            {% else %}
+                <a href="{% url 'login' %}">Iniciar Sesión</a>
+            {% endif %}
         </nav>
     </header>
 

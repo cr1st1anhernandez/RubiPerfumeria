@@ -3,54 +3,65 @@
 {% block title %}Resultados de Búsqueda - Sistema POS{% endblock %}
 
 {% block content %}
-<h2>Resultados de Búsqueda</h2>
+<div class="content-wrapper">
+    <h2>🔍 Resultados de Búsqueda</h2>
 
-<p><a href="{% url 'pos:index' %}">&larr; Volver a la Caja</a></p>
+    <p><a href="{% url 'pos:index' %}">&larr; Volver a la Caja</a></p>
 
-{% if search_query %}
-<p>Resultados para: "<strong>{{ search_query }}</strong>"</p>
-
-    {% if products %}
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Producto</th>
-                <th>Marca</th>
-                <th>Categoría</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for product in products %}
-            <tr>
-                <td>{{ product.codigo_barras }}</td>
-                <td>{{ product.nombre }}</td>
-                <td>{{ product.marca }}</td>
-                <td>{{ product.get_categoria_display }}</td>
-                <td>${{ product.precio }}</td>
-                <td>{{ product.stock_actual }}</td>
-                <td>
-                    {% if product.disponible %}
-                    <form method="POST" action="{% url 'pos:add_to_cart' product.id %}">
-                        {% csrf_token %}
-                        <input type="number" name="cantidad" value="1" min="1" max="{{ product.stock_actual }}" style="width:50px;">
-                        <button type="submit">Agregar</button>
-                    </form>
-                    {% else %}
-                    <em>No disponible</em>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p><em>No se encontraron productos.</em></p>
-    {% endif %}
-{% else %}
-<p><em>Ingresa un término de búsqueda.</em></p>
-{% endif %}
+    <div class="card">
+        <div class="card-header">
+            {% if search_query %}
+            Resultados para: "<strong>{{ search_query }}</strong>"
+            {% else %}
+            Búsqueda de Productos
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if search_query %}
+                {% if products %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Producto</th>
+                            <th>Marca</th>
+                            <th>Categoría</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>{{ product.codigo_barras }}</td>
+                            <td>{{ product.nombre }}</td>
+                            <td>{{ product.marca }}</td>
+                            <td>{{ product.get_categoria_display }}</td>
+                            <td>${{ product.precio }}</td>
+                            <td>{{ product.stock_actual }}</td>
+                            <td>
+                                {% if product.disponible %}
+                                <form method="POST" action="{% url 'pos:add_to_cart' product.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <input type="number" name="cantidad" value="1" min="1" max="{{ product.stock_actual }}" style="width:70px;">
+                                    <button type="submit" class="button button-small">Agregar</button>
+                                </form>
+                                {% else %}
+                                <em>No disponible</em>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p><em>No se encontraron productos.</em></p>
+                {% endif %}
+            {% else %}
+            <p><em>Ingresa un término de búsqueda.</em></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}

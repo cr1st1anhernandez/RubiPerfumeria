@@ -19,8 +19,10 @@
             <a href="{% url 'pos:inventory_movement' %}">📊 Inventario</a> |
             <a href="{% url 'pos:sales_report' %}">📑 Reporte Ventas</a> |
             <a href="{% url 'pos:inventory_report' %}">📋 Reporte Inventario</a> |
-            {% if user.is_authenticated and user.userprofile and user.userprofile.rol in 'ADMINISTRADOR,SUPERVISOR' %}
-            <a href="{% url 'pos:dashboard' %}">📈 Dashboard</a> |
+            {% if user.is_authenticated %}
+                {% if user.profile.rol == 'ADMINISTRADOR' or user.profile.rol == 'SUPERVISOR' %}
+                <a href="{% url 'pos:dashboard' %}">📈 Dashboard</a> |
+                {% endif %}
             {% endif %}
             <a href="{% url 'admin:index' %}">⚙️ Admin</a> |
             👤 <strong>{{ user.username }}</strong> |

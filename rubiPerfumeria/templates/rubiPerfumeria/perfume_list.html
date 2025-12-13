@@ -3,60 +3,76 @@
 {% block title %}Lista de Perfumes - RubiPerfumeria{% endblock %}
 
 {% block content %}
-<h2>Lista de Perfumes</h2>
+<div class="content-wrapper">
+    <h2>💐 Lista de Perfumes (Sistema Legacy)</h2>
 
-<a href="{% url 'perfume_create' %}">Crear Nuevo Perfume</a>
+    <p style="padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+        <strong>Nota:</strong> Este es el sistema legacy de perfumes. Para operaciones del punto de venta, usa el
+        <a href="{% url 'pos:index' %}">Sistema POS</a>.
+    </p>
 
-{% if perfumes %}
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Imagen</th>
-                <th>Nombre</th>
-                <th>Marca</th>
-                <th>Tipo</th>
-                <th>Género</th>
-                <th>Volumen</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for perfume in perfumes %}
-            <tr>
-                <td>
-                    {% if perfume.imagen %}
-                        <img src="{{ perfume.imagen.url }}" alt="{{ perfume.nombre }}" width="50" height="50">
-                    {% else %}
-                        Sin imagen
-                    {% endif %}
-                </td>
-                <td>{{ perfume.nombre }}</td>
-                <td>{{ perfume.marca }}</td>
-                <td>{{ perfume.get_tipo_display }}</td>
-                <td>{{ perfume.get_genero_display }}</td>
-                <td>{{ perfume.volumen }} ml</td>
-                <td>${{ perfume.precio }}</td>
-                <td>{{ perfume.stock }}</td>
-                <td>
-                    {% if perfume.activo %}
-                        Activo
-                    {% else %}
-                        Inactivo
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{% url 'perfume_detail' perfume.pk %}">Ver</a>
-                    <a href="{% url 'perfume_update' perfume.pk %}">Editar</a>
-                    <a href="{% url 'perfume_delete' perfume.pk %}">Eliminar</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% else %}
-    <p>No hay perfumes registrados.</p>
-{% endif %}
+    <p><a href="{% url 'perfume_create' %}" class="button">➕ Crear Nuevo Perfume</a></p>
+
+    <div class="card">
+        <div class="card-header">📋 Perfumes Registrados
+            {% if perfumes %}
+            <span class="badge badge-primary">{{ perfumes|length }} perfume{{ perfumes|length|pluralize }}</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if perfumes %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Nombre</th>
+                        <th>Marca</th>
+                        <th>Tipo</th>
+                        <th>Género</th>
+                        <th>Volumen</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for perfume in perfumes %}
+                    <tr>
+                        <td>
+                            {% if perfume.imagen %}
+                                <img src="{{ perfume.imagen.url }}" alt="{{ perfume.nombre }}" width="50" height="50" style="border-radius: 4px;">
+                            {% else %}
+                                <em>Sin imagen</em>
+                            {% endif %}
+                        </td>
+                        <td>{{ perfume.nombre }}</td>
+                        <td>{{ perfume.marca }}</td>
+                        <td>{{ perfume.get_tipo_display }}</td>
+                        <td>{{ perfume.get_genero_display }}</td>
+                        <td>{{ perfume.volumen }} ml</td>
+                        <td>${{ perfume.precio }}</td>
+                        <td>{{ perfume.stock }}</td>
+                        <td>
+                            {% if perfume.activo %}
+                            <span class="badge badge-success">Activo</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'perfume_detail' perfume.pk %}" class="button button-small button-secondary">Ver</a>
+                            <a href="{% url 'perfume_update' perfume.pk %}" class="button button-small">Editar</a>
+                            <a href="{% url 'perfume_delete' perfume.pk %}" class="button button-small button-danger">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p><em>No hay perfumes registrados.</em></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}

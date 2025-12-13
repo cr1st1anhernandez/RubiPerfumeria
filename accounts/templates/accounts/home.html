@@ -13,7 +13,7 @@
                 <a href="{% url 'pos:index' %}" class="button">💰 Ir a Caja Registradora</a>
                 <a href="{% url 'pos:sales_report' %}" class="button button-success">📑 Ver Reportes de Ventas</a>
                 <a href="{% url 'pos:inventory_report' %}" class="button button-success">📋 Ver Reporte de Inventario</a>
-                {% if user.userprofile and user.userprofile.rol in 'ADMINISTRADOR,SUPERVISOR' %}
+                {% if user.profile.rol == 'ADMINISTRADOR' or user.profile.rol == 'SUPERVISOR' %}
                 <a href="{% url 'pos:dashboard' %}" class="button button-secondary">📈 Ir al Dashboard</a>
                 {% endif %}
             </div>

@@ -3,37 +3,44 @@
 {% block title %}{{ action }} Perfume - RubiPerfumeria{% endblock %}
 
 {% block content %}
-<h2>{{ action }} Perfume</h2>
+<div class="content-wrapper">
+    <h2>{{ action }} Perfume</h2>
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
+    <div class="card">
+        <div class="card-header">📝 Formulario de Perfume</div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
 
-    <table>
-        {{ form.as_table }}
-    </table>
+                <table>
+                    {{ form.as_table }}
+                </table>
 
-    {% if form.errors %}
-        <div>
-            <h3>Errores:</h3>
-            <ul>
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <li>{{ field.label }}: {{ error }}</li>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
+                {% if form.errors %}
+                    <div style="padding: 10px; background: #f8d7da; border-left: 4px solid #dc3545; margin: 20px 0;">
+                        <h3>Errores:</h3>
+                        <ul>
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="button button-success">✓ {{ action }}</button>
+                    <a href="{% url 'perfume_list' %}" class="button button-danger">✗ Cancelar</a>
+                    {% if perfume %}
+                        <a href="{% url 'perfume_detail' perfume.pk %}" class="button button-secondary">← Volver al detalle</a>
+                    {% endif %}
+                </div>
+            </form>
         </div>
-    {% endif %}
-
-    <div>
-        <button type="submit">{{ action }}</button>
-        <a href="{% url 'perfume_list' %}">Cancelar</a>
-        {% if perfume %}
-            <a href="{% url 'perfume_detail' perfume.pk %}">Volver al detalle</a>
-        {% endif %}
     </div>
-</form>
+</div>
 {% endblock %}

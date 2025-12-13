@@ -4,18 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Reportes POS - RubiPerfumeria{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'pos/css/style.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <header>
-        <h1>RubiPerfumeria - Sistema de Reportes</h1>
+        <h1>RubiPerfumeria - Sistema POS</h1>
         <nav>
-            <a href="{% url 'home' %}">Inicio</a> |
-            <a href="{% url 'pos:index' %}">POS</a> |
-            <a href="{% url 'pos:sales_report' %}">Reporte de Ventas</a> |
-            <a href="{% url 'pos:inventory_report' %}">Reporte de Inventario</a> |
-            <a href="{% url 'admin:index' %}">Admin</a> |
-            Usuario: <strong>{{ user.username }}</strong> |
-            <a href="{% url 'logout' %}">Cerrar Sesión</a>
+            <a href="{% url 'home' %}">🏠 Inicio</a> |
+            <a href="{% url 'pos:index' %}">💰 Caja</a> |
+            <a href="{% url 'pos:product_list' %}">📦 Productos</a> |
+            <a href="{% url 'pos:sale_list' %}">🛒 Ventas</a> |
+            <a href="{% url 'pos:inventory_movement' %}">📊 Inventario</a> |
+            <a href="{% url 'pos:sales_report' %}">📑 Reporte Ventas</a> |
+            <a href="{% url 'pos:inventory_report' %}">📋 Reporte Inventario</a> |
+            {% if user.is_authenticated %}
+                {% if user.profile.rol == 'ADMINISTRADOR' or user.profile.rol == 'SUPERVISOR' %}
+                <a href="{% url 'pos:dashboard' %}">📈 Dashboard</a> |
+                {% endif %}
+            {% endif %}
+            <a href="{% url 'admin:index' %}">⚙️ Admin</a> |
+            👤 <strong>{{ user.username }}</strong> |
+            <a href="{% url 'logout' %}">🚪 Salir</a>
         </nav>
     </header>
 
@@ -37,7 +48,7 @@
 
     <footer>
         <hr>
-        <p>RubiPerfumeria &copy; 2025 - Sistema de Reportes</p>
+        <p>RubiPerfumeria &copy; 2025 - Sistema POS</p>
     </footer>
 </body>
 </html>
