@@ -331,7 +331,6 @@ def inventory_movement(request):
     return render(request, 'pos/inventory_movement.html', context)
 
 
-<<<<<<< HEAD
 # ============================================================================
 # DASHBOARD DE ADMINISTRADOR
 # ============================================================================
