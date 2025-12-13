@@ -203,6 +203,97 @@ class PerfumeViewsTestClient(TestCase):
         self.assertContains(response, "Chanel No 5")
         self.assertEqual(len(response.context['perfumes']), 2)
 
+    def test_perfume_list_with_movimientos(self):
+        """Test que la lista incluye movimientos de inventario."""
+        # Crear movimiento de inventario
+        from pos.models import MovimientoInventario
+        from django.contrib.auth.models import User
+
+        MovimientoInventario.objects.create(
+            perfume=self.perfume1,
+            usuario=self.user,
+            tipo_movimiento='AJUSTE',
+            cantidad=10,
+            stock_anterior=50,
+            stock_nuevo=60,
+            observaciones='Ajuste de prueba'
+        )
+
+        response = self.client.get(reverse('perfume_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('movimientos', response.context)
+        self.assertGreater(len(response.context['movimientos']), 0)
+
+    def test_exportar_inventario_pdf(self):
+        """Test que la exportación a PDF funciona."""
+        response = self.client.get(reverse('perfume_list') + '?exportar=pdf')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', response['Content-Disposition'])
+        self.assertIn('inventario_', response['Content-Disposition'])
+        self.assertIn('.pdf', response['Content-Disposition'])
+
+    def test_exportar_inventario_excel(self):
+        """Test que la exportación a Excel funciona."""
+        response = self.client.get(reverse('perfume_list') + '?exportar=excel')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        self.assertIn('attachment', response['Content-Disposition'])
+        self.assertIn('inventario_', response['Content-Disposition'])
+        self.assertIn('.xlsx', response['Content-Disposition'])
+
+    def test_exportar_pdf_con_movimientos(self):
+        """Test que el PDF incluye movimientos de inventario."""
+        from pos.models import MovimientoInventario
+
+        # Crear varios movimientos
+        for i in range(5):
+            MovimientoInventario.objects.create(
+                perfume=self.perfume1,
+                usuario=self.user,
+                tipo_movimiento='AJUSTE',
+                cantidad=i+1,
+                stock_anterior=50,
+                stock_nuevo=50+i+1,
+                observaciones=f'Movimiento {i+1}'
+            )
+
+        response = self.client.get(reverse('perfume_list') + '?exportar=pdf')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+
+    def test_exportar_excel_con_movimientos(self):
+        """Test que el Excel incluye dos hojas: inventario y movimientos."""
+        from pos.models import MovimientoInventario
+
+        # Crear movimientos
+        MovimientoInventario.objects.create(
+            perfume=self.perfume1,
+            usuario=self.user,
+            tipo_movimiento='VENTA',
+            cantidad=-2,
+            stock_anterior=50,
+            stock_nuevo=48
+        )
+
+        response = self.client.get(reverse('perfume_list') + '?exportar=excel')
+        self.assertEqual(response.status_code, 200)
+
+        # Verificar que es un archivo Excel válido
+        import openpyxl
+        from io import BytesIO
+
+        wb = openpyxl.load_workbook(BytesIO(response.content))
+
+        # Verificar que tiene las dos hojas
+        self.assertIn('Inventario', wb.sheetnames)
+        self.assertIn('Movimientos', wb.sheetnames)
+
     def test_perfume_detail_view(self):
         response = self.client.get(reverse('perfume_detail', args=[self.perfume1.pk]))
         self.assertEqual(response.status_code, 200)

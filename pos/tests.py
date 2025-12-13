@@ -1135,3 +1135,199 @@ class DashboardViewTest(TransactionTestCase):
         # Verificar formato de labels (00:00, 01:00, etc.)
         self.assertEqual(horas_labels[0], '00:00')
         self.assertEqual(horas_labels[23], '23:00')
+
+
+class ReportesViewTest(TransactionTestCase):
+    """Tests para el sistema de reportes con exportación."""
+
+    def setUp(self):
+        """Configurar datos de prueba para reportes."""
+        # Crear usuarios
+        self.supervisor_user = User.objects.create_user(
+            username='supervisor_test',
+            password='testpass123'
+        )
+        self.supervisor_user.profile.rol = 'SUPERVISOR'
+        self.supervisor_user.profile.save()
+
+        self.cajero_user = User.objects.create_user(
+            username='cajero_test',
+            password='testpass123'
+        )
+        self.cajero_user.profile.rol = 'CAJERO'
+        self.cajero_user.profile.save()
+
+        # Crear perfume
+        self.perfume = Perfume.objects.create(
+            nombre='Perfume Test',
+            marca='Marca Test',
+            tipo='EDP',
+            genero='U',
+            notas_superiores='Test',
+            notas_medias='Test',
+            notas_base='Test',
+            volumen=100,
+            precio=Decimal('2000.00'),
+            stock=50
+        )
+
+        # Crear ventas de prueba
+        from django.utils import timezone
+
+        hoy = timezone.now()
+        self.venta1 = Venta.objects.create(
+            cajero=self.cajero_user,
+            subtotal=Decimal('2000.00'),
+            total=Decimal('2000.00'),
+            monto_recibido=Decimal('2000.00'),
+            cambio=Decimal('0.00'),
+            estado='COMPLETADA',
+            fecha_creacion=hoy
+        )
+
+        DetalleVenta.objects.create(
+            venta=self.venta1,
+            perfume=self.perfume,
+            cantidad=1,
+            precio_unitario=Decimal('2000.00'),
+            subtotal=Decimal('2000.00')
+        )
+
+        ayer = hoy - timedelta(days=1)
+        self.venta2 = Venta.objects.create(
+            cajero=self.cajero_user,
+            subtotal=Decimal('2000.00'),
+            total=Decimal('2000.00'),
+            monto_recibido=Decimal('2000.00'),
+            cambio=Decimal('0.00'),
+            estado='COMPLETADA',
+            fecha_creacion=ayer
+        )
+
+        DetalleVenta.objects.create(
+            venta=self.venta2,
+            perfume=self.perfume,
+            cantidad=1,
+            precio_unitario=Decimal('2000.00'),
+            subtotal=Decimal('2000.00')
+        )
+
+        self.client = Client()
+
+    def test_reportes_requiere_login(self):
+        """Test que reportes requiere autenticación."""
+        response = self.client.get(reverse('pos:reportes_ventas'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_cajero_no_puede_acceder_reportes(self):
+        """Test que cajero no puede acceder a reportes."""
+        self.client.login(username='cajero_test', password='testpass123')
+        response = self.client.get(reverse('pos:reportes_ventas'))
+
+        # Debe redirigir por falta de permisos
+        self.assertEqual(response.status_code, 302)
+
+    def test_supervisor_puede_acceder_reportes(self):
+        """Test que supervisor puede acceder a reportes."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:reportes_ventas'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'pos/reportes_ventas.html')
+
+    def test_reportes_muestra_datos_correctos(self):
+        """Test que reportes muestra datos correctos en el contexto."""
+        self.client.login(username='supervisor_test', password='testpass123')
+        response = self.client.get(reverse('pos:reportes_ventas'))
+
+        # Verificar contexto
+        self.assertIn('ventas', response.context)
+        self.assertIn('total_ventas', response.context)
+        self.assertIn('cantidad_ventas', response.context)
+        self.assertIn('ticket_promedio', response.context)
+
+        # Verificar valores
+        self.assertGreaterEqual(response.context['cantidad_ventas'], 2)
+
+    def test_reportes_filtro_por_fecha(self):
+        """Test que el filtro de fechas funciona correctamente."""
+        self.client.login(username='supervisor_test', password='testpass123')
+
+        from django.utils import timezone
+        hoy = timezone.now().date()
+        ayer = hoy - timedelta(days=1)
+
+        # Filtrar solo por un rango de 2 días
+        response = self.client.get(
+            reverse('pos:reportes_ventas'),
+            {
+                'fecha_desde': ayer.strftime('%Y-%m-%d'),
+                'fecha_hasta': hoy.strftime('%Y-%m-%d')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        # Debe mostrar al menos una venta (las que creamos en setUp)
+        self.assertGreaterEqual(response.context['cantidad_ventas'], 1)
+
+    def test_reportes_filtro_por_cajero(self):
+        """Test que el filtro de cajero funciona correctamente."""
+        self.client.login(username='supervisor_test', password='testpass123')
+
+        response = self.client.get(
+            reverse('pos:reportes_ventas'),
+            {'cajero': self.cajero_user.id}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        # Todas las ventas son del mismo cajero
+        self.assertGreaterEqual(response.context['cantidad_ventas'], 2)
+
+    def test_exportar_pdf(self):
+        """Test que la exportación a PDF funciona."""
+        self.client.login(username='supervisor_test', password='testpass123')
+
+        from django.utils import timezone
+        hoy = timezone.now().date()
+        ayer = hoy - timedelta(days=1)
+
+        response = self.client.get(
+            reverse('pos:reportes_ventas'),
+            {
+                'fecha_desde': ayer.strftime('%Y-%m-%d'),
+                'fecha_hasta': hoy.strftime('%Y-%m-%d'),
+                'exportar': 'pdf'
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', response['Content-Disposition'])
+        self.assertIn('.pdf', response['Content-Disposition'])
+
+    def test_exportar_excel(self):
+        """Test que la exportación a Excel funciona."""
+        self.client.login(username='supervisor_test', password='testpass123')
+
+        from django.utils import timezone
+        hoy = timezone.now().date()
+        ayer = hoy - timedelta(days=1)
+
+        response = self.client.get(
+            reverse('pos:reportes_ventas'),
+            {
+                'fecha_desde': ayer.strftime('%Y-%m-%d'),
+                'fecha_hasta': hoy.strftime('%Y-%m-%d'),
+                'exportar': 'excel'
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        self.assertIn('attachment', response['Content-Disposition'])
+        self.assertIn('.xlsx', response['Content-Disposition'])
+

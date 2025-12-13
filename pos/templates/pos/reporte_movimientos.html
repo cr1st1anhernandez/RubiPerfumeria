@@ -1,0 +1,216 @@
+{% extends 'pos/base_pos.html' %}
+{% load pos_filters %}
+
+{% block title %}Reporte de Inventario - Rubi Perfumeria{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f5f5f5;
+        padding: 20px;
+    }
+
+    .inventario-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    h1 {
+        color: #333;
+        margin-bottom: 30px;
+    }
+
+    .export-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        color: white;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .tabla-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .tabla-card h2 {
+        margin: 0 0 20px 0;
+        font-size: 18px;
+        color: #333;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    table th {
+        background-color: #3498db;
+        color: white;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    table td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        font-size: 13px;
+    }
+
+    table tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .badge-stock-bajo {
+        background-color: #fee;
+        color: #d63031;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 11px;
+    }
+
+    .badge-stock-ok {
+        background-color: #e8f8f5;
+        color: #27ae60;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 11px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="inventario-container">
+    <h1>📦 Reporte de Inventario</h1>
+
+    <!-- Botones de exportación -->
+    <div class="export-buttons">
+        <a href="?exportar=pdf" class="btn btn-danger">
+            📄 Exportar a PDF
+        </a>
+        <a href="?exportar=excel" class="btn btn-success">
+            📊 Exportar a Excel
+        </a>
+    </div>
+
+    <!-- Stock Actual -->
+    <div class="tabla-card">
+        <h2>Stock Actual de Productos</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Marca</th>
+                    <th>Tipo</th>
+                    <th class="text-center">Volumen</th>
+                    <th class="text-center">Stock</th>
+                    <th class="text-right">Precio</th>
+                    <th class="text-right">Valor Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for producto in productos_stock %}
+                <tr>
+                    <td>{{ producto.nombre }}</td>
+                    <td>{{ producto.marca }}</td>
+                    <td>{{ producto.tipo }}</td>
+                    <td class="text-center">{{ producto.volumen }} ml</td>
+                    <td class="text-center">
+                        {% if producto.stock < 10 %}
+                        <span class="badge-stock-bajo">{{ producto.stock }}</span>
+                        {% else %}
+                        <span class="badge-stock-ok">{{ producto.stock }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">${{ producto.precio|floatformat:2 }}</td>
+                    <td class="text-right"><strong>${{ producto.precio|mul:producto.stock|floatformat:2 }}</strong></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 30px; color: #999;">
+                        No hay productos en el inventario
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Movimientos -->
+    <div class="tabla-card">
+        <h2>Últimos Movimientos de Inventario{% if total_movimientos > 100 %} (Mostrando los primeros 100 de {{ total_movimientos }}){% endif %}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Producto</th>
+                    <th>Marca</th>
+                    <th>Tipo Movimiento</th>
+                    <th class="text-center">Cantidad</th>
+                    <th>Usuario</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movimiento in movimientos %}
+                <tr>
+                    <td>{{ movimiento.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td>{{ movimiento.fecha_creacion|time:"H:i:s" }}</td>
+                    <td>{{ movimiento.perfume.nombre }}</td>
+                    <td>{{ movimiento.perfume.marca }}</td>
+                    <td>{{ movimiento.get_tipo_movimiento_display }}</td>
+                    <td class="text-center">{{ movimiento.cantidad }}</td>
+                    <td>{{ movimiento.usuario.username }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 30px; color: #999;">
+                        No hay movimientos de inventario registrados
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
