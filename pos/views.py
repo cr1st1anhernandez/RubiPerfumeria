@@ -6,7 +6,8 @@ from decimal import Decimal
 from .models import Product, Sales, SaleDetails, Inventory
 from .forms import (
     ProductSearchForm, AddToCartForm, CompleteSaleForm,
-    InventoryMovementForm, ProductFilterForm
+    InventoryMovementForm, ProductFilterForm, SalesReportFilterForm,
+    InventoryReportFilterForm
 )
 
 
@@ -323,3 +324,112 @@ def inventory_movement(request):
     }
 
     return render(request, 'pos/inventory_movement.html', context)
+
+
+@login_required
+def sales_report_view(request):
+    """Vista para el reporte de ventas con filtros y exportación"""
+    from .reports import generate_sales_pdf, generate_sales_excel
+
+    form = SalesReportFilterForm(request.GET or None)
+    sales = Sales.objects.all().select_related('cajero').order_by('-fecha_hora')
+
+    # Aplicar filtros
+    if form.is_valid():
+        fecha_desde = form.cleaned_data.get('fecha_desde')
+        fecha_hasta = form.cleaned_data.get('fecha_hasta')
+        cajero = form.cleaned_data.get('cajero')
+        metodo_pago = form.cleaned_data.get('metodo_pago')
+        estado = form.cleaned_data.get('estado')
+
+        if fecha_desde:
+            sales = sales.filter(fecha_hora__date__gte=fecha_desde)
+
+        if fecha_hasta:
+            sales = sales.filter(fecha_hora__date__lte=fecha_hasta)
+
+        if cajero:
+            sales = sales.filter(cajero=cajero)
+
+        if metodo_pago:
+            sales = sales.filter(metodo_pago=metodo_pago)
+
+        if estado:
+            sales = sales.filter(estado=estado)
+
+    # Calcular totales
+    total_sales = sales.count()
+    total_amount = sum(sale.total for sale in sales)
+
+    # Verificar si se solicita exportación
+    format_type = request.GET.get('format')
+    if format_type == 'pdf':
+        return generate_sales_pdf(sales)
+    elif format_type == 'excel':
+        return generate_sales_excel(sales)
+
+    # Mostrar vista HTML
+    context = {
+        'form': form,
+        'sales': sales[:100],  # Limitar a 100 para la vista HTML
+        'total_sales': total_sales,
+        'total_amount': total_amount
+    }
+
+    return render(request, 'pos/reports/sales_report.html', context)
+
+
+@login_required
+def inventory_report_view(request):
+    """Vista para el reporte de inventario con filtros y exportación"""
+    from .reports import generate_inventory_pdf, generate_inventory_excel
+    from django.db.models import F
+
+    form = InventoryReportFilterForm(request.GET or None)
+    products = Product.objects.all()
+
+    # Aplicar filtros
+    if form.is_valid():
+        categoria = form.cleaned_data.get('categoria')
+        genero = form.cleaned_data.get('genero')
+        marca = form.cleaned_data.get('marca')
+        solo_bajo_stock = form.cleaned_data.get('solo_bajo_stock')
+        solo_activos = form.cleaned_data.get('solo_activos')
+
+        if categoria:
+            products = products.filter(categoria=categoria)
+
+        if genero:
+            products = products.filter(genero=genero)
+
+        if marca:
+            products = products.filter(marca__icontains=marca)
+
+        if solo_bajo_stock:
+            products = products.filter(stock_actual__lte=F('stock_minimo'))
+
+        if solo_activos:
+            products = products.filter(activo=True)
+
+    # Calcular totales
+    total_products = products.count()
+    low_stock_count = sum(1 for p in products if p.requiere_reabastecimiento)
+    total_value = sum(p.valor_inventario for p in products)
+
+    # Verificar si se solicita exportación
+    format_type = request.GET.get('format')
+    if format_type == 'pdf':
+        return generate_inventory_pdf(products)
+    elif format_type == 'excel':
+        return generate_inventory_excel(products)
+
+    # Mostrar vista HTML
+    context = {
+        'form': form,
+        'products': products[:100],  # Limitar a 100 para la vista HTML
+        'total_products': total_products,
+        'low_stock_count': low_stock_count,
+        'total_value': total_value
+    }
+
+    return render(request, 'pos/reports/inventory_report.html', context)

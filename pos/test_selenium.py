@@ -739,3 +739,266 @@ class POSWorkflowSeleniumTests(StaticLiveServerTestCase):
         self.assertIn('Perfume Selenium 1', self.selenium.page_source)
         self.assertIn('200.00', self.selenium.page_source)
         self.assertIn('TARJETA', self.selenium.page_source)
+
+
+@skipIf(not CHROME_AVAILABLE, "Chrome/Chromium no está instalado. Instala Chrome o Chromium para ejecutar estas pruebas.")
+class ReportsSeleniumTests(StaticLiveServerTestCase):
+    """
+    Pruebas de integración con Selenium para el sistema de reportes.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        # Configurar opciones de Chrome
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
+
+        try:
+            service = Service(ChromeDriverManager().install())
+            cls.selenium = webdriver.Chrome(service=service, options=chrome_options)
+        except Exception as e:
+            print(f"Error al inicializar Chrome: {e}")
+            raise
+
+        cls.selenium.implicitly_wait(10)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.selenium.quit()
+        super().tearDownClass()
+
+    def setUp(self):
+        # Crear usuario
+        self.user = User.objects.create_user(
+            username='testuser_reports',
+            password='testpass123'
+        )
+        UserProfile.objects.create(user=self.user, rol='CAJERO')
+
+        # Crear productos
+        self.product1 = Product.objects.create(
+            nombre='Perfume Report 1',
+            codigo_barras='REP001',
+            marca='Brand Rep',
+            categoria='PERFUME',
+            genero='HOMBRE',
+            precio=Decimal('150.00'),
+            stock_actual=20,
+            stock_minimo=5
+        )
+
+        self.product2 = Product.objects.create(
+            nombre='Colonia Report 2',
+            codigo_barras='REP002',
+            marca='Brand Rep',
+            categoria='COLONIA',
+            genero='MUJER',
+            precio=Decimal('80.00'),
+            stock_actual=3,  # Bajo stock
+            stock_minimo=10
+        )
+
+        # Crear ventas
+        self.sale1 = Sales.objects.create(
+            total=Decimal('150.00'),
+            metodo_pago='EFECTIVO',
+            cajero=self.user,
+            estado='COMPLETADA'
+        )
+
+        self.sale2 = Sales.objects.create(
+            total=Decimal('300.00'),
+            metodo_pago='TARJETA',
+            cajero=self.user,
+            estado='COMPLETADA'
+        )
+
+    def login(self):
+        """Helper para iniciar sesión"""
+        self.selenium.get(f'{self.live_server_url}/login/')
+        username_input = self.selenium.find_element(By.NAME, "username")
+        password_input = self.selenium.find_element(By.NAME, "password")
+        username_input.send_keys('testuser_reports')
+        password_input.send_keys('testpass123')
+        self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]').click()
+        time.sleep(1)
+
+    def test_access_sales_report(self):
+        """Prueba acceder al reporte de ventas"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/sales/')
+
+        # Verificar que la página carga
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "h2"))
+        )
+
+        self.assertIn('Reporte de Ventas', self.selenium.page_source)
+        self.assertIn('Total de ventas:', self.selenium.page_source)
+        self.assertIn('Monto total:', self.selenium.page_source)
+
+    def test_sales_report_displays_sales(self):
+        """Prueba que el reporte muestra las ventas"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/sales/')
+
+        # Esperar tabla de ventas
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        # Verificar que las ventas aparecen
+        self.assertIn(self.sale1.numero_ticket, self.selenium.page_source)
+        self.assertIn(self.sale2.numero_ticket, self.selenium.page_source)
+        self.assertIn('150.00', self.selenium.page_source)
+        self.assertIn('300.00', self.selenium.page_source)
+
+    def test_sales_report_filter_by_payment_method(self):
+        """Prueba filtrar el reporte de ventas por método de pago"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/sales/')
+
+        # Seleccionar método de pago
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.NAME, "metodo_pago"))
+        )
+
+        metodo_select = self.selenium.find_element(By.NAME, "metodo_pago")
+        metodo_select.send_keys('Efectivo')
+
+        # Hacer clic en Filtrar
+        filtrar_btn = self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]:not([name="format"])')
+        filtrar_btn.click()
+
+        time.sleep(1)
+
+        # Verificar que solo aparece la venta en efectivo
+        self.assertIn(self.sale1.numero_ticket, self.selenium.page_source)
+        self.assertIn('EFECTIVO', self.selenium.page_source)
+
+    def test_sales_report_pdf_download_button(self):
+        """Prueba que el botón de descarga PDF existe"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/sales/')
+
+        # Verificar que existe el botón de PDF
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'button[value="pdf"]'))
+        )
+
+        pdf_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[value="pdf"]')
+        self.assertIsNotNone(pdf_button)
+        self.assertIn('PDF', pdf_button.text)
+
+    def test_sales_report_excel_download_button(self):
+        """Prueba que el botón de descarga Excel existe"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/sales/')
+
+        # Verificar que existe el botón de Excel
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'button[value="excel"]'))
+        )
+
+        excel_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[value="excel"]')
+        self.assertIsNotNone(excel_button)
+        self.assertIn('Excel', excel_button.text)
+
+    def test_access_inventory_report(self):
+        """Prueba acceder al reporte de inventario"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/inventory/')
+
+        # Verificar que la página carga
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "h2"))
+        )
+
+        self.assertIn('Reporte de Inventario', self.selenium.page_source)
+        self.assertIn('Total de productos:', self.selenium.page_source)
+        self.assertIn('Productos con bajo stock:', self.selenium.page_source)
+
+    def test_inventory_report_displays_products(self):
+        """Prueba que el reporte muestra los productos"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/inventory/')
+
+        # Esperar tabla de productos
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        # Verificar que los productos aparecen
+        self.assertIn('Perfume Report 1', self.selenium.page_source)
+        self.assertIn('Colonia Report 2', self.selenium.page_source)
+        self.assertIn('REP001', self.selenium.page_source)
+        self.assertIn('REP002', self.selenium.page_source)
+
+    def test_inventory_report_shows_low_stock(self):
+        """Prueba que el reporte identifica productos con bajo stock"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/inventory/')
+
+        # Esperar que cargue
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "table"))
+        )
+
+        # Verificar que muestra "BAJO STOCK"
+        self.assertIn('BAJO STOCK', self.selenium.page_source)
+
+    def test_inventory_report_filter_by_category(self):
+        """Prueba filtrar el reporte de inventario por categoría"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/inventory/')
+
+        # Seleccionar categoría
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.NAME, "categoria"))
+        )
+
+        categoria_select = self.selenium.find_element(By.NAME, "categoria")
+        categoria_select.send_keys('Perfume')
+
+        # Hacer clic en Filtrar
+        filtrar_btn = self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]:not([name="format"])')
+        filtrar_btn.click()
+
+        time.sleep(1)
+
+        # Verificar que solo aparece el perfume
+        self.assertIn('Perfume Report 1', self.selenium.page_source)
+
+    def test_inventory_report_pdf_download_button(self):
+        """Prueba que el botón de descarga PDF existe"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/inventory/')
+
+        # Verificar que existe el botón de PDF
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'button[value="pdf"]'))
+        )
+
+        pdf_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[value="pdf"]')
+        self.assertIsNotNone(pdf_button)
+        self.assertIn('PDF', pdf_button.text)
+
+    def test_inventory_report_excel_download_button(self):
+        """Prueba que el botón de descarga Excel existe"""
+        self.login()
+        self.selenium.get(f'{self.live_server_url}/pos/reports/inventory/')
+
+        # Verificar que existe el botón de Excel
+        WebDriverWait(self.selenium, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'button[value="excel"]'))
+        )
+
+        excel_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[value="excel"]')
+        self.assertIsNotNone(excel_button)
+        self.assertIn('Excel', excel_button.text)

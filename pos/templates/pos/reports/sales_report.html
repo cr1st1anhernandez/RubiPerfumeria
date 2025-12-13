@@ -1,0 +1,67 @@
+{% extends 'pos/reports/base.html' %}
+
+{% block title %}Reporte de Ventas - Sistema POS{% endblock %}
+
+{% block content %}
+<h2>Reporte de Ventas</h2>
+
+<section>
+    <h3>Filtros</h3>
+    <form method="GET">
+        <table>
+            {{ form.as_table }}
+        </table>
+        <p>
+            <button type="submit">Filtrar</button>
+            <button type="submit" name="format" value="pdf">Descargar PDF</button>
+            <button type="submit" name="format" value="excel">Descargar Excel</button>
+        </p>
+    </form>
+</section>
+
+<hr>
+
+<section>
+    <h3>Resumen</h3>
+    <ul>
+        <li><strong>Total de ventas:</strong> {{ total_sales }}</li>
+        <li><strong>Monto total:</strong> ${{ total_amount }}</li>
+    </ul>
+</section>
+
+<hr>
+
+<section>
+    <h3>Ventas (mostrando primeras {{ sales.count }} de {{ total_sales }})</h3>
+    {% if sales %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Ticket</th>
+                <th>Fecha y Hora</th>
+                <th>Cajero</th>
+                <th>Método de Pago</th>
+                <th>Total</th>
+                <th>Descuento</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+            <tr>
+                <td>{{ sale.numero_ticket }}</td>
+                <td>{{ sale.fecha_hora|date:"d/m/Y H:i" }}</td>
+                <td>{{ sale.cajero.username }}</td>
+                <td>{{ sale.get_metodo_pago_display }}</td>
+                <td>${{ sale.total }}</td>
+                <td>${{ sale.descuento }}</td>
+                <td>{{ sale.get_estado_display }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p><em>No hay ventas para mostrar.</em></p>
+    {% endif %}
+</section>
+{% endblock %}
