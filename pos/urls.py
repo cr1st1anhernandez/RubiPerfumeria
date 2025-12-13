@@ -24,4 +24,14 @@ urlpatterns = [
 
     # Inventario
     path('inventory/movement/', views.inventory_movement, name='inventory_movement'),
+
+    # Dashboard de Administrador
+    path('dashboard/', views.dashboard_view, name='dashboard'),
+    path('dashboard/api/kpis/', views.dashboard_api_kpis, name='dashboard_api_kpis'),
+    path('dashboard/api/sales-trend/', views.dashboard_api_sales_trend, name='dashboard_api_sales_trend'),
+    path('dashboard/api/sales-by-cashier/', views.dashboard_api_sales_by_cashier, name='dashboard_api_sales_by_cashier'),
+    path('dashboard/api/payment-methods/', views.dashboard_api_payment_methods, name='dashboard_api_payment_methods'),
+    path('dashboard/api/top-products/', views.dashboard_api_top_products, name='dashboard_api_top_products'),
+    path('dashboard/api/sales-by-category/', views.dashboard_api_sales_by_category, name='dashboard_api_sales_by_category'),
+    path('dashboard/api/sales-by-hour/', views.dashboard_api_sales_by_hour, name='dashboard_api_sales_by_hour'),
 ]

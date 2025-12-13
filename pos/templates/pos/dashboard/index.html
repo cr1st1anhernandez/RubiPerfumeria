@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - RubiPerfumeria</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        nav {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        nav a {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: #5dade2;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toolbar label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .toolbar input[type="date"] {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .toolbar button {
+            padding: 0.5rem 1.2rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .toolbar button:hover {
+            background: #2980b9;
+        }
+
+        .toolbar button.secondary {
+            background: #95a5a6;
+        }
+
+        .toolbar button.secondary:hover {
+            background: #7f8c8d;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .kpi-card h3 {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.3rem;
+        }
+
+        .kpi-card .change {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .kpi-card .change.positive {
+            color: #27ae60;
+        }
+
+        .kpi-card .change.negative {
+            color: #e74c3c;
+        }
+
+        .kpi-card .subtitle {
+            font-size: 0.8rem;
+            color: #95a5a6;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-card .export-btn {
+            padding: 0.3rem 0.8rem;
+            font-size: 0.75rem;
+            background: #ecf0f1;
+            color: #34495e;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .chart-card .export-btn:hover {
+            background: #bdc3c7;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #95a5a6;
+        }
+
+        /* Auto-refresh indicator */
+        .auto-refresh {
+            font-size: 0.8rem;
+            color: #95a5a6;
+            text-align: right;
+            margin-top: 1rem;
+        }
+
+        /* Messages */
+        .messages {
+            background: #3498db;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .messages.error {
+            background: #e74c3c;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toolbar button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Dashboard de Administrador - RubiPerfumeria</h1>
+        <nav>
+            <a href="{% url 'home' %}">Inicio</a> |
+            <a href="{% url 'pos:index' %}">Caja</a> |
+            <a href="{% url 'pos:product_list' %}">Productos</a> |
+            <a href="{% url 'pos:sale_list' %}">Ventas</a> |
+            <a href="{% url 'pos:inventory_movement' %}">Inventario</a> |
+            <a href="{% url 'admin:index' %}">Admin</a> |
+            Usuario: <strong>{{ user.username }}</strong> |
+            <a href="{% url 'logout' %}">Cerrar Sesión</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Toolbar con filtros -->
+        <div class="toolbar">
+            <label>
+                Desde:
+                <input type="date" id="fechaDesde">
+            </label>
+            <label>
+                Hasta:
+                <input type="date" id="fechaHasta">
+            </label>
+            <button onclick="aplicarFiltros()">Actualizar</button>
+            <button onclick="setHoy()" class="secondary">Hoy</button>
+            <button onclick="setUltimos7Dias()" class="secondary">Últimos 7 días</button>
+            <button onclick="setMesActual()" class="secondary">Mes actual</button>
+            <div style="flex-grow: 1"></div>
+            <label>
+                <input type="checkbox" id="autoRefresh" checked>
+                Auto-actualizar (60s)
+            </label>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <h3>Ventas Totales</h3>
+                <div class="value" id="kpiVentasTotal">$0.00</div>
+                <div class="change" id="kpiVentasCambio">0%</div>
+            </div>
+            <div class="kpi-card">
+                <h3>Transacciones</h3>
+                <div class="value" id="kpiTransacciones">0</div>
+                <div class="subtitle" id="kpiPromedio">Promedio: $0.00</div>
+            </div>
+            <div class="kpi-card">
+                <h3>Mejor Cajero</h3>
+                <div class="value" style="font-size: 1.3rem;" id="kpiMejorCajero">N/A</div>
+                <div class="subtitle" id="kpiMejorCajeroTotal">$0.00</div>
+            </div>
+            <div class="kpi-card">
+                <h3>Productos Bajo Stock</h3>
+                <div class="value" id="kpiBajoStock">0</div>
+                <div class="subtitle">Requieren reabastecimiento</div>
+            </div>
+        </div>
+
+        <!-- Gráficas -->
+        <div class="charts-grid">
+            <!-- Tendencia de Ventas -->
+            <div class="chart-card full-width">
+                <h2>
+                    Tendencia de Ventas
+                    <button class="export-btn" onclick="exportChart('chartSalesTrend', 'ventas-tendencia')">Exportar PNG</button>
+                </h2>
+                <div class="chart-container">
+                    <canvas id="chartSalesTrend"></canvas>
+                </div>
+            </div>
+
+            <!-- Ventas por Cajero -->
+            <div class="chart-card">
+                <h2>
+                    Ventas por Cajero
+                    <button class="export-btn" onclick="exportChart('chartSalesByCashier', 'ventas-cajero')">Exportar PNG</button>
+                </h2>
+                <div class="chart-container">
+                    <canvas id="chartSalesByCashier"></canvas>
+                </div>
+            </div>
+
+            <!-- Métodos de Pago -->
+            <div class="chart-card">
+                <h2>
+                    Métodos de Pago
+                    <button class="export-btn" onclick="exportChart('chartPaymentMethods', 'metodos-pago')">Exportar PNG</button>
+                </h2>
+                <div class="chart-container">
+                    <canvas id="chartPaymentMethods"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Productos -->
+            <div class="chart-card full-width">
+                <h2>
+                    Top 10 Productos Más Vendidos
+                    <button class="export-btn" onclick="exportChart('chartTopProducts', 'top-productos')">Exportar PNG</button>
+                </h2>
+                <div class="chart-container">
+                    <canvas id="chartTopProducts"></canvas>
+                </div>
+            </div>
+
+            <!-- Ventas por Categoría -->
+            <div class="chart-card">
+                <h2>
+                    Ventas por Categoría
+                    <button class="export-btn" onclick="exportChart('chartSalesByCategory', 'ventas-categoria')">Exportar PNG</button>
+                </h2>
+                <div class="chart-container">
+                    <canvas id="chartSalesByCategory"></canvas>
+                </div>
+            </div>
+
+            <!-- Ventas por Hora -->
+            <div class="chart-card">
+                <h2>
+                    Ventas por Hora del Día
+                    <button class="export-btn" onclick="exportChart('chartSalesByHour', 'ventas-hora')">Exportar PNG</button>
+                </h2>
+                <div class="chart-container">
+                    <canvas id="chartSalesByHour"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="auto-refresh">
+            Última actualización: <span id="lastUpdate">-</span>
+        </div>
+    </div>
+
+    <script>
+        // Configuración global de Chart.js para mejor rendimiento
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        Chart.defaults.font.size = 12;
+        Chart.defaults.animation.duration = 400; // Animaciones rápidas
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = false;
+
+        // Variables globales
+        let charts = {};
+        let autoRefreshInterval = null;
+
+        // Inicializar fechas
+        function setHoy() {
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('fechaDesde').value = hoy;
+            document.getElementById('fechaHasta').value = hoy;
+            aplicarFiltros();
+        }
+
+        function setUltimos7Dias() {
+            const hoy = new Date();
+            const hace7Dias = new Date(hoy);
+            hace7Dias.setDate(hoy.getDate() - 6);
+            document.getElementById('fechaDesde').value = hace7Dias.toISOString().split('T')[0];
+            document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
+            aplicarFiltros();
+        }
+
+        function setMesActual() {
+            const hoy = new Date();
+            const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            document.getElementById('fechaDesde').value = primerDia.toISOString().split('T')[0];
+            document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
+            aplicarFiltros();
+        }
+
+        // Obtener parámetros de fecha
+        function getFechaParams() {
+            const desde = document.getElementById('fechaDesde').value;
+            const hasta = document.getElementById('fechaHasta').value;
+            return `fecha_desde=${desde}&fecha_hasta=${hasta}`;
+        }
+
+        // Cargar KPIs
+        async function cargarKPIs() {
+            try {
+                const response = await fetch(`/pos/dashboard/api/kpis/?${getFechaParams()}`);
+                const data = await response.json();
+
+                document.getElementById('kpiVentasTotal').textContent = `$${data.ventas_total.toFixed(2)}`;
+                document.getElementById('kpiTransacciones').textContent = data.ventas_cantidad;
+                document.getElementById('kpiPromedio').textContent = `Promedio: $${data.promedio_venta.toFixed(2)}`;
+                document.getElementById('kpiMejorCajero').textContent = data.mejor_cajero.nombre;
+                document.getElementById('kpiMejorCajeroTotal').textContent = `$${data.mejor_cajero.total.toFixed(2)}`;
+                document.getElementById('kpiBajoStock').textContent = data.productos_bajo_stock;
+
+                const cambio = document.getElementById('kpiVentasCambio');
+                const porcentaje = data.ventas_cambio_porcentual;
+                cambio.textContent = `${porcentaje >= 0 ? '+' : ''}${porcentaje.toFixed(2)}% vs período anterior`;
+                cambio.className = `change ${porcentaje >= 0 ? 'positive' : 'negative'}`;
+            } catch (error) {
+                console.error('Error cargando KPIs:', error);
+            }
+        }
+
+        // Cargar Tendencia de Ventas
+        async function cargarSalesTrend() {
+            try {
+                const response = await fetch(`/pos/dashboard/api/sales-trend/?${getFechaParams()}`);
+                const data = await response.json();
+
+                if (charts.salesTrend) charts.salesTrend.destroy();
+
+                const ctx = document.getElementById('chartSalesTrend').getContext('2d');
+                charts.salesTrend = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Ventas ($)',
+                            data: data.ventas,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { display: true }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: (value) => '$' + value.toFixed(0)
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error cargando tendencia de ventas:', error);
+            }
+        }
+
+        // Cargar Ventas por Cajero
+        async function cargarSalesByCashier() {
+            try {
+                const response = await fetch(`/pos/dashboard/api/sales-by-cashier/?${getFechaParams()}`);
+                const data = await response.json();
+
+                if (charts.salesByCashier) charts.salesByCashier.destroy();
+
+                const ctx = document.getElementById('chartSalesByCashier').getContext('2d');
+                charts.salesByCashier = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Ventas ($)',
+                            data: data.ventas,
+                            backgroundColor: '#2ecc71'
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: (value) => '$' + value.toFixed(0)
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error cargando ventas por cajero:', error);
+            }
+        }
+
+        // Cargar Métodos de Pago
+        async function cargarPaymentMethods() {
+            try {
+                const response = await fetch(`/pos/dashboard/api/payment-methods/?${getFechaParams()}`);
+                const data = await response.json();
+
+                if (charts.paymentMethods) charts.paymentMethods.destroy();
+
+                const ctx = document.getElementById('chartPaymentMethods').getContext('2d');
+                charts.paymentMethods = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.ventas,
+                            backgroundColor: ['#3498db', '#2ecc71', '#f39c12', '#e74c3c']
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error cargando métodos de pago:', error);
+            }
+        }
+
+        // Cargar Top Productos
+        async function cargarTopProducts() {
+            try {
+                const response = await fetch(`/pos/dashboard/api/top-products/?${getFechaParams()}`);
+                const data = await response.json();
+
+                if (charts.topProducts) charts.topProducts.destroy();
+
+                const ctx = document.getElementById('chartTopProducts').getContext('2d');
+                charts.topProducts = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Cantidad Vendida',
+                            data: data.cantidad,
+                            backgroundColor: '#9b59b6'
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { beginAtZero: true }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error cargando top productos:', error);
+            }
+        }
+
+        // Cargar Ventas por Categoría
+        async function cargarSalesByCategory() {
+            try {
+                const response = await fetch(`/pos/dashboard/api/sales-by-category/?${getFechaParams()}`);
+                const data = await response.json();
+
+                if (charts.salesByCategory) charts.salesByCategory.destroy();
+
+                const ctx = document.getElementById('chartSalesByCategory').getContext('2d');
+                charts.salesByCategory = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Ventas ($)',
+                            data: data.ventas,
+                            backgroundColor: '#e67e22'
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: (value) => '$' + value.toFixed(0)
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error cargando ventas por categoría:', error);
+            }
+        }
+
+        // Cargar Ventas por Hora
+        async function cargarSalesByHour() {
+            try {
+                const response = await fetch(`/pos/dashboard/api/sales-by-hour/?${getFechaParams()}`);
+                const data = await response.json();
+
+                if (charts.salesByHour) charts.salesByHour.destroy();
+
+                const ctx = document.getElementById('chartSalesByHour').getContext('2d');
+                charts.salesByHour = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Ventas ($)',
+                            data: data.ventas,
+                            backgroundColor: '#1abc9c'
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: (value) => '$' + value.toFixed(0)
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error cargando ventas por hora:', error);
+            }
+        }
+
+        // Aplicar filtros y recargar todo
+        async function aplicarFiltros() {
+            await Promise.all([
+                cargarKPIs(),
+                cargarSalesTrend(),
+                cargarSalesByCashier(),
+                cargarPaymentMethods(),
+                cargarTopProducts(),
+                cargarSalesByCategory(),
+                cargarSalesByHour()
+            ]);
+            actualizarTimestamp();
+        }
+
+        // Exportar gráfica como PNG
+        function exportChart(chartId, filename) {
+            const canvas = document.getElementById(chartId);
+            const url = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `${filename}-${new Date().toISOString().split('T')[0]}.png`;
+            link.href = url;
+            link.click();
+        }
+
+        // Actualizar timestamp
+        function actualizarTimestamp() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString('es-ES');
+        }
+
+        // Auto-refresh
+        function setupAutoRefresh() {
+            const checkbox = document.getElementById('autoRefresh');
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    autoRefreshInterval = setInterval(aplicarFiltros, 60000); // 60 segundos
+                } else {
+                    clearInterval(autoRefreshInterval);
+                }
+            });
+
+            // Iniciar auto-refresh por defecto
+            if (checkbox.checked) {
+                autoRefreshInterval = setInterval(aplicarFiltros, 60000);
+            }
+        }
+
+        // Inicializar dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            setHoy(); // Cargar datos de hoy por defecto
+            setupAutoRefresh();
+        });
+    </script>
+</body>
+</html>
