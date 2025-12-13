@@ -854,3 +854,326 @@ class DashboardSeleniumTest(SeleniumTestBase):
             # Verificar que tiene colores definidos
             self.assertIsNotNone(colors['borderColor'])
             self.assertIsNotNone(colors['backgroundColor'])
+
+
+class ReportesSeleniumTest(SeleniumTestBase):
+    """Tests de Selenium para el sistema de reportes."""
+
+    def setUp(self):
+        """Configurar datos de prueba para reportes."""
+        super().setUp()
+
+        # Crear ventas de prueba para reportes
+        from django.utils import timezone
+        from datetime import timedelta
+
+        hoy = timezone.now()
+
+        # Crear venta de hoy
+        venta_hoy = Venta.objects.create(
+            cajero=self.cajero_user,
+            subtotal=Decimal('2000.00'),
+            total=Decimal('2000.00'),
+            monto_recibido=Decimal('2000.00'),
+            cambio=Decimal('0.00'),
+            metodo_pago='EFECTIVO',
+            estado='COMPLETADA',
+            fecha_creacion=hoy
+        )
+
+        from .models import DetalleVenta
+        DetalleVenta.objects.create(
+            venta=venta_hoy,
+            perfume=self.perfume1,
+            cantidad=1,
+            precio_unitario=Decimal('2000.00'),
+            subtotal=Decimal('2000.00')
+        )
+
+        # Crear venta de ayer
+        ayer = hoy - timedelta(days=1)
+        venta_ayer = Venta.objects.create(
+            cajero=self.cajero_user,
+            subtotal=Decimal('1500.00'),
+            total=Decimal('1500.00'),
+            monto_recibido=Decimal('2000.00'),
+            cambio=Decimal('500.00'),
+            metodo_pago='TARJETA',
+            estado='COMPLETADA',
+            fecha_creacion=ayer
+        )
+
+        DetalleVenta.objects.create(
+            venta=venta_ayer,
+            perfume=self.perfume2,
+            cantidad=1,
+            precio_unitario=Decimal('1500.00'),
+            subtotal=Decimal('1500.00')
+        )
+
+    def test_cajero_no_puede_acceder_reportes(self):
+        """Test que cajero no puede acceder a reportes."""
+        self.login('cajero_selenium', 'testpass123')
+
+        # Intentar acceder a reportes
+        self.selenium.get(f'{self.live_server_url}/pos/reportes/')
+        time.sleep(1)
+
+        # Debe ser redirigido (no debe estar en /reportes/)
+        current_url = self.selenium.current_url
+        self.assertNotIn('/reportes/', current_url)
+
+    def test_supervisor_puede_acceder_reportes(self):
+        """Test que supervisor puede acceder a reportes."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # El supervisor es redirigido automáticamente a reportes al login
+        time.sleep(1)
+
+        # Verificar que estamos en reportes
+        self.assertIn('/reportes/', self.selenium.current_url)
+
+        # Verificar título
+        page_source = self.selenium.page_source
+        self.assertIn('Reportes de Ventas', page_source)
+
+    def test_reportes_muestra_filtros(self):
+        """Test que la página de reportes muestra los filtros."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Navegar a reportes
+        self.selenium.get(f'{self.live_server_url}/pos/reportes/')
+        time.sleep(2)
+
+        # Verificar que existen los campos de filtro
+        try:
+            fecha_desde = self.selenium.find_element(By.NAME, 'fecha_desde')
+            fecha_hasta = self.selenium.find_element(By.NAME, 'fecha_hasta')
+            cajero_select = self.selenium.find_element(By.NAME, 'cajero')
+
+            self.assertIsNotNone(fecha_desde)
+            self.assertIsNotNone(fecha_hasta)
+            self.assertIsNotNone(cajero_select)
+        except Exception as e:
+            self.fail(f"No se encontraron los filtros: {e}")
+
+    def test_reportes_muestra_botones_exportar(self):
+        """Test que la página muestra botones de exportación."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Navegar a reportes
+        self.selenium.get(f'{self.live_server_url}/pos/reportes/')
+        time.sleep(2)
+
+        # Verificar que existen los botones de exportar
+        page_source = self.selenium.page_source
+        self.assertIn('Exportar a PDF', page_source)
+        self.assertIn('Exportar a Excel', page_source)
+
+        # Verificar que son links válidos
+        try:
+            pdf_link = self.selenium.find_element(By.PARTIAL_LINK_TEXT, 'PDF')
+            excel_link = self.selenium.find_element(By.PARTIAL_LINK_TEXT, 'Excel')
+
+            self.assertIsNotNone(pdf_link)
+            self.assertIsNotNone(excel_link)
+        except Exception as e:
+            self.fail(f"No se encontraron los botones de exportar: {e}")
+
+    def test_reportes_muestra_resumen(self):
+        """Test que la página muestra el resumen de ventas."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Navegar a reportes
+        self.selenium.get(f'{self.live_server_url}/pos/reportes/')
+        time.sleep(2)
+
+        # Verificar que muestra las tarjetas de resumen
+        page_source = self.selenium.page_source
+        self.assertIn('Total de Ventas', page_source)
+        self.assertIn('Cantidad de Transacciones', page_source)
+        self.assertIn('Ticket Promedio', page_source)
+
+    def test_reportes_muestra_tabla_ventas(self):
+        """Test que la página muestra la tabla de ventas."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Navegar a reportes
+        self.selenium.get(f'{self.live_server_url}/pos/reportes/')
+        time.sleep(2)
+
+        # Verificar que existe la tabla
+        try:
+            tabla = self.selenium.find_element(By.TAG_NAME, 'table')
+            self.assertIsNotNone(tabla)
+
+            # Verificar columnas de la tabla
+            page_source = self.selenium.page_source
+            self.assertIn('Fecha', page_source)
+            self.assertIn('Ticket', page_source)
+            self.assertIn('Cajero', page_source)
+            self.assertIn('Total', page_source)
+        except Exception as e:
+            self.fail(f"No se encontró la tabla de ventas: {e}")
+
+    def test_reportes_filtrar_por_fecha(self):
+        """Test que el filtro de fechas funciona."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Navegar a reportes
+        self.selenium.get(f'{self.live_server_url}/pos/reportes/')
+        time.sleep(2)
+
+        # Obtener fecha de hoy
+        from django.utils import timezone
+        hoy = timezone.now().date()
+
+        # Filtrar por hoy
+        try:
+            fecha_desde = self.selenium.find_element(By.NAME, 'fecha_desde')
+            fecha_hasta = self.selenium.find_element(By.NAME, 'fecha_hasta')
+
+            fecha_desde.clear()
+            fecha_desde.send_keys(hoy.strftime('%Y-%m-%d'))
+
+            fecha_hasta.clear()
+            fecha_hasta.send_keys(hoy.strftime('%Y-%m-%d'))
+
+            # Hacer clic en botón filtrar
+            filtrar_btn = self.selenium.find_element(By.XPATH, "//button[contains(text(), 'Filtrar')]")
+            filtrar_btn.click()
+
+            time.sleep(2)
+
+            # Verificar que se aplicó el filtro (debe mostrar solo ventas de hoy)
+            page_source = self.selenium.page_source
+            # Debe haber al menos una venta
+            self.assertIn('cajero_selenium', page_source.lower())
+        except Exception as e:
+            self.fail(f"No se pudo filtrar por fecha: {e}")
+
+    def test_reportes_navegacion_desde_menu(self):
+        """Test navegación a reportes desde el menú."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Esperar a que cargue la página
+        time.sleep(1)
+
+        # Buscar el link de Reportes en el nav
+        try:
+            reportes_link = self.selenium.find_element(By.LINK_TEXT, 'Reportes')
+            reportes_link.click()
+
+            time.sleep(2)
+
+            # Verificar que estamos en reportes
+            self.assertIn('/reportes/', self.selenium.current_url)
+
+            # Verificar que se cargó correctamente
+            page_source = self.selenium.page_source
+            self.assertIn('Reportes de Ventas', page_source)
+        except Exception as e:
+            self.fail(f"No se pudo navegar a reportes desde el menú: {e}")
+
+
+class InventarioExportSeleniumTest(SeleniumTestBase):
+    """Tests de Selenium para la exportación de inventario."""
+
+    def setUp(self):
+        """Configurar datos de prueba para inventario."""
+        super().setUp()
+
+        # Crear movimientos de inventario
+        from .models import MovimientoInventario
+
+        MovimientoInventario.objects.create(
+            perfume=self.perfume1,
+            usuario=self.supervisor_user,
+            tipo_movimiento='AJUSTE_MANUAL',
+            cantidad=5,
+            stock_anterior=10,
+            stock_nuevo=15,
+            observaciones='Ajuste de prueba'
+        )
+
+    def test_supervisor_puede_acceder_inventario(self):
+        """Test que supervisor puede acceder al inventario."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Navegar al inventario
+        self.selenium.get(f'{self.live_server_url}/perfumes/')
+        time.sleep(2)
+
+        # Verificar que estamos en el inventario
+        self.assertIn('/perfumes/', self.selenium.current_url)
+
+        # Verificar título
+        page_source = self.selenium.page_source
+        self.assertIn('Lista de Perfumes', page_source)
+
+    def test_inventario_muestra_botones_exportar(self):
+        """Test que el inventario muestra botones de exportación."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Navegar al inventario
+        self.selenium.get(f'{self.live_server_url}/perfumes/')
+        time.sleep(2)
+
+        # Verificar que existen los botones de exportar
+        page_source = self.selenium.page_source
+        self.assertIn('Exportar a PDF', page_source)
+        self.assertIn('Exportar a Excel', page_source)
+
+        # Verificar que son links válidos
+        try:
+            pdf_link = self.selenium.find_element(By.PARTIAL_LINK_TEXT, 'PDF')
+            excel_link = self.selenium.find_element(By.PARTIAL_LINK_TEXT, 'Excel')
+
+            self.assertIsNotNone(pdf_link)
+            self.assertIsNotNone(excel_link)
+        except Exception as e:
+            self.fail(f"No se encontraron los botones de exportar: {e}")
+
+    def test_inventario_muestra_tabla_productos(self):
+        """Test que el inventario muestra la tabla de productos."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Navegar al inventario
+        self.selenium.get(f'{self.live_server_url}/perfumes/')
+        time.sleep(2)
+
+        # Verificar que existe la tabla
+        try:
+            tabla = self.selenium.find_element(By.TAG_NAME, 'table')
+            self.assertIsNotNone(tabla)
+
+            # Verificar que muestra los productos
+            page_source = self.selenium.page_source
+            self.assertIn('Perfume Selenium 1', page_source)
+            self.assertIn('Perfume Selenium 2', page_source)
+        except Exception as e:
+            self.fail(f"No se encontró la tabla de productos: {e}")
+
+    def test_inventario_muestra_movimientos(self):
+        """Test que el inventario muestra los movimientos."""
+        self.login('supervisor_selenium', 'testpass123')
+
+        # Navegar al inventario
+        self.selenium.get(f'{self.live_server_url}/perfumes/')
+        time.sleep(2)
+
+        # Verificar que muestra la sección de movimientos
+        page_source = self.selenium.page_source
+        self.assertIn('Movimientos', page_source)
+
+    def test_cajero_no_puede_acceder_inventario(self):
+        """Test que cajero no puede acceder al inventario."""
+        self.login('cajero_selenium', 'testpass123')
+
+        # Intentar acceder al inventario
+        self.selenium.get(f'{self.live_server_url}/perfumes/')
+        time.sleep(1)
+
+        # Debe ser redirigido (no debe estar en /perfumes/)
+        current_url = self.selenium.current_url
+        self.assertNotIn('/perfumes/', current_url)
