@@ -1,15 +1,26 @@
-{% extends 'perfumes/base.html' %}
+{% extends 'base.html' %}
 
-{% block title %}Eliminar Perfume - Rubi Perfumeria{% endblock %}
+{% block title %}Eliminar Perfume — RubiPerfumeria{% endblock %}
 
 {% block content %}
-<h2>Confirmar Eliminacion</h2>
+<div class="container-narrow">
+    <small>Inventario</small>
+    <h1>Confirmar Eliminación</h1>
 
-<p>Esta seguro de que desea eliminar el perfume: <strong>{{ perfume.marca }} - {{ perfume.nombre }}</strong>?</p>
+    <div class="card mt-lg">
+        <div class="card-body">
+            <p>¿Está seguro de que desea eliminar el perfume?</p>
+            <p style="margin-top: var(--space-md);"><strong>{{ perfume.marca }} — {{ perfume.nombre }}</strong></p>
+            <p class="text-muted" style="margin-top: var(--space-sm);">Esta acción no se puede deshacer.</p>
+        </div>
+    </div>
 
-<form method="post">
-    {% csrf_token %}
-    <button type="submit">Si, eliminar</button>
-    <a href="{% url 'perfume_detail' perfume.pk %}">No, cancelar</a>
-</form>
+    <form method="post" class="mt-lg">
+        {% csrf_token %}
+        <div class="flex flex-gap">
+            <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+            <a href="{% url 'perfume_detail' perfume.pk %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

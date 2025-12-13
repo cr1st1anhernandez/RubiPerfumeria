@@ -418,10 +418,6 @@ class PerfumeSeleniumTest(LiveServerTestCase):
         if not self.selenium:
             self.skipTest("Selenium WebDriver no disponible")
 
-        # Crear usuario con rol SUPERVISOR
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123'
         # Create supervisor user for testing (required for perfume views)
         self.user = User.objects.create_user(
             username='supervisor_selenium',
@@ -430,8 +426,6 @@ class PerfumeSeleniumTest(LiveServerTestCase):
         self.user.profile.rol = 'SUPERVISOR'
         self.user.profile.save()
 
-        # Login con Selenium
-        self.login_selenium()
         # Login as supervisor
         self.client.login(username='supervisor_selenium', password='supervisor123')
 
