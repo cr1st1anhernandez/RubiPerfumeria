@@ -1,0 +1,45 @@
+{% extends 'perfumes/base.html' %}
+
+{% block title %}Lista de Perfumes - Rubi Perfumeria{% endblock %}
+
+{% block content %}
+<h2>Lista de Perfumes</h2>
+
+{% if perfumes %}
+    <table border="1" cellpadding="10" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Marca</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Genero</th>
+                <th>Volumen</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for perfume in perfumes %}
+            <tr>
+                <td>{{ perfume.marca }}</td>
+                <td>{{ perfume.nombre }}</td>
+                <td>{{ perfume.get_tipo_display }}</td>
+                <td>{{ perfume.get_genero_display }}</td>
+                <td>{{ perfume.volumen }} ml</td>
+                <td>${{ perfume.precio }}</td>
+                <td>{{ perfume.stock }}</td>
+                <td>
+                    <a href="{% url 'perfume_detail' perfume.pk %}">Ver</a> |
+                    <a href="{% url 'perfume_update' perfume.pk %}">Editar</a> |
+                    <a href="{% url 'perfume_delete' perfume.pk %}">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No hay perfumes registrados.</p>
+    <p><a href="{% url 'perfume_create' %}">Agregar el primer perfume</a></p>
+{% endif %}
+{% endblock %}

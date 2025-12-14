@@ -1,0 +1,84 @@
+{% extends 'perfumes/base.html' %}
+
+{% block title %}{{ perfume.nombre }} - Rubi Perfumeria{% endblock %}
+
+{% block content %}
+<h2>Detalle del Perfume</h2>
+
+<table border="1" cellpadding="10" cellspacing="0">
+    <tr>
+        <th>Marca:</th>
+        <td>{{ perfume.marca }}</td>
+    </tr>
+    <tr>
+        <th>Nombre:</th>
+        <td>{{ perfume.nombre }}</td>
+    </tr>
+    <tr>
+        <th>Descripcion:</th>
+        <td>{{ perfume.descripcion|default:"Sin descripcion" }}</td>
+    </tr>
+    <tr>
+        <th>Codigo de Barras:</th>
+        <td>{{ perfume.codigo_barras|default:"No especificado" }}</td>
+    </tr>
+    <tr>
+        <th>Tipo:</th>
+        <td>{{ perfume.get_tipo_display }}</td>
+    </tr>
+    <tr>
+        <th>Genero:</th>
+        <td>{{ perfume.get_genero_display }}</td>
+    </tr>
+    <tr>
+        <th>Notas Superiores:</th>
+        <td>{{ perfume.notas_superiores }}</td>
+    </tr>
+    <tr>
+        <th>Notas Medias:</th>
+        <td>{{ perfume.notas_medias }}</td>
+    </tr>
+    <tr>
+        <th>Notas Base:</th>
+        <td>{{ perfume.notas_base }}</td>
+    </tr>
+    <tr>
+        <th>Volumen:</th>
+        <td>{{ perfume.volumen }} ml</td>
+    </tr>
+    <tr>
+        <th>Concentracion:</th>
+        <td>{{ perfume.concentracion|default:"No especificado" }}{% if perfume.concentracion %}%{% endif %}</td>
+    </tr>
+    <tr>
+        <th>Año de Lanzamiento:</th>
+        <td>{{ perfume.anio_lanzamiento|default:"No especificado" }}</td>
+    </tr>
+    <tr>
+        <th>Precio:</th>
+        <td>${{ perfume.precio }}</td>
+    </tr>
+    <tr>
+        <th>Stock:</th>
+        <td>{{ perfume.stock }} unidades</td>
+    </tr>
+    <tr>
+        <th>Estado:</th>
+        <td>{% if perfume.esta_en_stock %}Disponible{% else %}Sin stock{% endif %}</td>
+    </tr>
+    <tr>
+        <th>Fecha de Creacion:</th>
+        <td>{{ perfume.fecha_creacion }}</td>
+    </tr>
+    <tr>
+        <th>Ultima Actualizacion:</th>
+        <td>{{ perfume.fecha_actualizacion }}</td>
+    </tr>
+</table>
+
+<p>
+    <a href="{% url 'perfume_update' perfume.pk %}">Editar</a> |
+    <a href="{% url 'perfume_delete' perfume.pk %}">Eliminar</a> |
+    <a href="{% url 'perfume_list' %}">Volver a la lista</a>
+</p>
+{% endblock %}
