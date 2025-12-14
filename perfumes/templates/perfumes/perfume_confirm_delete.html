@@ -1,0 +1,15 @@
+{% extends 'perfumes/base.html' %}
+
+{% block title %}Eliminar Perfume - Rubi Perfumeria{% endblock %}
+
+{% block content %}
+<h2>Confirmar Eliminacion</h2>
+
+<p>Esta seguro de que desea eliminar el perfume: <strong>{{ perfume.marca }} - {{ perfume.nombre }}</strong>?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Si, eliminar</button>
+    <a href="{% url 'perfume_detail' perfume.pk %}">No, cancelar</a>
+</form>
+{% endblock %}
