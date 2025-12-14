@@ -1,6 +1,7 @@
 from django.test import TestCase, Client, LiveServerTestCase
 from django.urls import reverse
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 from decimal import Decimal
 from .models import Perfume
 from selenium import webdriver
@@ -147,6 +148,16 @@ class PerfumeModelTest(TestCase):
 class PerfumeViewsTestClient(TestCase):
     def setUp(self):
         self.client = Client()
+        # Crear usuario con rol de SUPERVISOR para poder acceder a todas las vistas
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123'
+        )
+        self.user.profile.rol = 'SUPERVISOR'
+        self.user.profile.save()
+        # Autenticar el cliente
+        self.client.login(username='testuser', password='testpass123')
+
         self.perfume1 = Perfume.objects.create(
             nombre="Sauvage",
             marca="Dior",
@@ -270,10 +281,10 @@ class PerfumeViewsTestClient(TestCase):
         self.assertEqual(Perfume.objects.count(), 1)
         self.assertFalse(Perfume.objects.filter(pk=self.perfume1.pk).exists())
 
-    def test_root_url_redirects_to_perfume_list(self):
+    def test_root_url_redirects_to_home(self):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, '/perfumes/', fetch_redirect_response=False)
+        self.assertRedirects(response, '/accounts/home/', fetch_redirect_response=False)
 
 
 # ==================== TESTS CON SELENIUM ====================
@@ -303,6 +314,17 @@ class PerfumeSeleniumTest(LiveServerTestCase):
         if not self.selenium:
             self.skipTest("Selenium WebDriver no disponible")
 
+        # Crear usuario con rol SUPERVISOR
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123'
+        )
+        self.user.profile.rol = 'SUPERVISOR'
+        self.user.profile.save()
+
+        # Login con Selenium
+        self.login_selenium()
+
         self.perfume = Perfume.objects.create(
             nombre="Sauvage",
             marca="Dior",
@@ -314,6 +336,22 @@ class PerfumeSeleniumTest(LiveServerTestCase):
             volumen=100,
             precio=Decimal("95.00"),
             stock=50
+        )
+
+    def login_selenium(self):
+        """Helper method to login with Selenium."""
+        self.selenium.get(f'{self.live_server_url}/accounts/login/')
+        username_input = self.selenium.find_element(By.NAME, 'username')
+        password_input = self.selenium.find_element(By.NAME, 'password')
+        submit_button = self.selenium.find_element(By.CSS_SELECTOR, 'button[type="submit"]')
+
+        username_input.send_keys('testuser')
+        password_input.send_keys('testpass123')
+        submit_button.click()
+
+        # Wait for login to complete
+        WebDriverWait(self.selenium, 10).until(
+            EC.url_changes(f'{self.live_server_url}/accounts/login/')
         )
 
     def test_selenium_list_perfumes(self):
