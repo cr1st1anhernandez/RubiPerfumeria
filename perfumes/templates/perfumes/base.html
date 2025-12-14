@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Rubi Perfumeria{% endblock %}</title>
+</head>
+<body>
+    <header>
+        <h1>Rubi Perfumeria - Gestion de Perfumes</h1>
+        <nav>
+            <a href="{% url 'perfume_list' %}">Lista de Perfumes</a> |
+            <a href="{% url 'perfume_create' %}">Agregar Perfume</a>
+        </nav>
+        <hr>
+    </header>
+
+    <main>
+        {% if messages %}
+            <div>
+                {% for message in messages %}
+                    <p><strong>{{ message }}</strong></p>
+                {% endfor %}
+            </div>
+            <hr>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <hr>
+        <p>&copy; 2025 Rubi Perfumeria</p>
+    </footer>
+</body>
+</html>
