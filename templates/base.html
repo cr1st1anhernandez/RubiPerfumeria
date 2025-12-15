@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RubiPerfumeria{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/premium-system.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <header class="site-header">
+        <div class="container">
+            <a href="{% url 'home' %}" class="brand">RubiPerfumeria</a>
+
+            <nav class="nav-main">
+                <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Inicio</a>
+                <a href="{% url 'pos:pos_principal' %}" {% if 'pos_principal' in request.resolver_match.url_name %}class="active"{% endif %}>Punto de Venta</a>
+                <a href="{% url 'pos:lista_ventas' %}" {% if 'lista_ventas' in request.resolver_match.url_name %}class="active"{% endif %}>Ventas</a>
+
+                {% if user.profile.puede_gestionar_inventario %}
+                <a href="{% url 'perfume_list' %}" {% if 'perfume' in request.resolver_match.url_name %}class="active"{% endif %}>Inventario</a>
+                <a href="{% url 'pos:dashboard' %}" {% if 'dashboard' in request.resolver_match.url_name %}class="active"{% endif %}>Dashboard</a>
+                <a href="{% url 'pos:reportes_ventas' %}" {% if 'reportes' in request.resolver_match.url_name %}class="active"{% endif %}>Reportes</a>
+                {% endif %}
+
+                <span class="user-info">{{ user.profile.get_rol_display }} — {{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="btn-tertiary">Salir</a>
+            </nav>
+        </div>
+    </header>
+    {% endif %}
+
+    {% if messages %}
+    <div class="container">
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

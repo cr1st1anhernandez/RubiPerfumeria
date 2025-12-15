@@ -1,237 +1,84 @@
-{% extends 'pos/base_pos.html' %}
+{% extends 'base.html' %}
 
-{% block title %}Reportes de Ventas - Rubi Perfumeria{% endblock %}
-
-{% block extra_css %}
-<style>
-    body {
-        background-color: #f5f5f5;
-        padding: 20px;
-    }
-
-    .reportes-container {
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    h1 {
-        color: #333;
-        margin-bottom: 30px;
-    }
-
-    /* Filtros */
-    .filtros-card {
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
-
-    .filtros-form {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        align-items: end;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .form-group label {
-        font-weight: 600;
-        color: #555;
-        margin-bottom: 5px;
-        font-size: 14px;
-    }
-
-    .form-group input,
-    .form-group select {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 14px;
-    }
-
-    .btn {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 14px;
-        transition: all 0.3s;
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        color: white;
-    }
-
-    .btn-danger {
-        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-        color: white;
-    }
-
-    /* Resumen */
-    .resumen-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-
-    .resumen-card {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .resumen-card h3 {
-        margin: 0 0 10px 0;
-        color: #666;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .resumen-card .valor {
-        font-size: 28px;
-        font-weight: bold;
-        color: #2c3e50;
-    }
-
-    /* Tabla */
-    .tabla-card {
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
-
-    .tabla-card h2 {
-        margin: 0 0 20px 0;
-        font-size: 18px;
-        color: #333;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    table th {
-        background-color: #3498db;
-        color: white;
-        padding: 12px;
-        text-align: left;
-        font-weight: 600;
-        font-size: 13px;
-    }
-
-    table td {
-        padding: 12px;
-        border-bottom: 1px solid #eee;
-        font-size: 13px;
-    }
-
-    table tr:hover {
-        background-color: #f8f9fa;
-    }
-
-    .text-right {
-        text-align: right;
-    }
-
-    .export-buttons {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-</style>
-{% endblock %}
+{% block title %}Reportes — RubiPerfumeria{% endblock %}
 
 {% block content %}
-<div class="reportes-container">
-    <h1>📊 Reportes de Ventas</h1>
+<div class="container">
+    <div class="mb-lg">
+        <small>Análisis</small>
+        <h1>Reportes de Ventas</h1>
+    </div>
 
     <!-- Filtros -->
-    <div class="filtros-card">
-        <form method="get" class="filtros-form">
-            <div class="form-group">
-                <label for="fecha_desde">Fecha Desde:</label>
-                <input type="date" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde }}" required>
-            </div>
+    <div class="card mb-lg">
+        <div class="card-body">
+            <form method="get" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); align-items: end;">
+                <div class="form-group">
+                    <label for="fecha_desde">Fecha Desde</label>
+                    <input type="date" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde }}" required>
+                </div>
 
-            <div class="form-group">
-                <label for="fecha_hasta">Fecha Hasta:</label>
-                <input type="date" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta }}" required>
-            </div>
+                <div class="form-group">
+                    <label for="fecha_hasta">Fecha Hasta</label>
+                    <input type="date" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta }}" required>
+                </div>
 
-            <div class="form-group">
-                <label for="cajero">Cajero:</label>
-                <select id="cajero" name="cajero">
-                    <option value="">Todos</option>
-                    {% for cajero in cajeros %}
-                    <option value="{{ cajero.id }}" {% if cajero_seleccionado == cajero.id|stringformat:"s" %}selected{% endif %}>
-                        {{ cajero.username }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
+                <div class="form-group">
+                    <label for="cajero">Cajero</label>
+                    <select id="cajero" name="cajero">
+                        <option value="">Todos</option>
+                        {% for cajero in cajeros %}
+                        <option value="{{ cajero.id }}" {% if cajero_seleccionado == cajero.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cajero.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Filtrar</button>
-            </div>
-        </form>
+                <div style="display: flex; gap: var(--space-xs);">
+                    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Botones de exportación -->
-    <div class="export-buttons">
+    <div class="flex flex-gap mb-lg">
         <a href="?fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}{% if cajero_seleccionado %}&cajero={{ cajero_seleccionado }}{% endif %}&exportar=pdf"
-           class="btn btn-danger">
-            📄 Exportar a PDF
-        </a>
+           class="btn btn-secondary btn-sm">Exportar PDF</a>
         <a href="?fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}{% if cajero_seleccionado %}&cajero={{ cajero_seleccionado }}{% endif %}&exportar=excel"
-           class="btn btn-success">
-            📊 Exportar a Excel
-        </a>
+           class="btn btn-secondary btn-sm">Exportar Excel</a>
     </div>
 
     <!-- Resumen -->
-    <div class="resumen-grid">
-        <div class="resumen-card">
-            <h3>Total de Ventas</h3>
-            <div class="valor">${{ total_ventas|floatformat:2 }}</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-xl);">
+        <div class="card">
+            <div class="card-body">
+                <small>Total de Ventas</small>
+                <h2 style="margin: var(--space-xs) 0 0 0;">${{ total_ventas|floatformat:2 }}</h2>
+            </div>
         </div>
 
-        <div class="resumen-card">
-            <h3>Cantidad de Transacciones</h3>
-            <div class="valor">{{ cantidad_ventas }}</div>
+        <div class="card">
+            <div class="card-body">
+                <small>Transacciones</small>
+                <h2 style="margin: var(--space-xs) 0 0 0;">{{ cantidad_ventas }}</h2>
+            </div>
         </div>
 
-        <div class="resumen-card">
-            <h3>Ticket Promedio</h3>
-            <div class="valor">${{ ticket_promedio|floatformat:2 }}</div>
+        <div class="card">
+            <div class="card-body">
+                <small>Ticket Promedio</small>
+                <h2 style="margin: var(--space-xs) 0 0 0;">${{ ticket_promedio|floatformat:2 }}</h2>
+            </div>
         </div>
     </div>
 
     <!-- Tabla de ventas -->
-    <div class="tabla-card">
-        <h2>Detalle de Ventas{% if ventas.count > 100 %} (Mostrando las primeras 100){% endif %}</h2>
+    <div>
+        <h2 class="mb-md">Detalle de Ventas{% if ventas.count > 100 %} (Primeras 100){% endif %}</h2>
+
+        {% if ventas %}
         <table>
             <thead>
                 <tr>
@@ -239,9 +86,9 @@
                     <th>Hora</th>
                     <th>Ticket</th>
                     <th>Cajero</th>
-                    <th class="text-right">Subtotal</th>
-                    <th class="text-right">Descuento</th>
-                    <th class="text-right">Total</th>
+                    <th>Subtotal</th>
+                    <th>Descuento</th>
+                    <th>Total</th>
                     <th>Estado</th>
                 </tr>
             </thead>
@@ -249,23 +96,22 @@
                 {% for venta in ventas %}
                 <tr>
                     <td>{{ venta.fecha_creacion|date:"d/m/Y" }}</td>
-                    <td>{{ venta.fecha_creacion|time:"H:i:s" }}</td>
+                    <td>{{ venta.fecha_creacion|time:"H:i" }}</td>
                     <td>{{ venta.numero_ticket }}</td>
                     <td>{{ venta.cajero.username }}</td>
-                    <td class="text-right">${{ venta.subtotal|floatformat:2 }}</td>
-                    <td class="text-right">${{ venta.descuento_monto|floatformat:2 }}</td>
-                    <td class="text-right"><strong>${{ venta.total|floatformat:2 }}</strong></td>
-                    <td>{{ venta.get_estado_display }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" style="text-align: center; padding: 30px; color: #999;">
-                        No hay ventas en el período seleccionado
-                    </td>
+                    <td>${{ venta.subtotal|floatformat:2 }}</td>
+                    <td>${{ venta.descuento_monto|floatformat:2 }}</td>
+                    <td><strong>${{ venta.total|floatformat:2 }}</strong></td>
+                    <td><small>{{ venta.get_estado_display }}</small></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <div class="text-center mt-xl">
+            <p class="text-muted">No hay ventas en el período seleccionado</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
