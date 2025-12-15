@@ -79,12 +79,11 @@ class PerfumeListAccessTest(RoleBasedAccessTest):
         response = self.client.get(reverse('perfume_list'))
         self.assertEqual(response.status_code, 200)
 
-    def test_cajero_cannot_view_perfume_list(self):
-        """Test that cajeros cannot view perfume list (requires supervisor)."""
+    def test_cajero_can_view_perfume_list(self):
+        """Test that cajeros can view perfume list."""
         self.client.login(username='cajero', password='cajero123')
         response = self.client.get(reverse('perfume_list'))
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('home'))
+        self.assertEqual(response.status_code, 200)
 
 
     def test_unauthenticated_cannot_view_perfume_list(self):

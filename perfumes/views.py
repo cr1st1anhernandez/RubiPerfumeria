@@ -6,13 +6,13 @@ from .models import Perfume
 from .forms import PerfumeForm
 
 
-@supervisor_required
+@login_required
 def perfume_list(request):
     perfumes = Perfume.objects.all()
     return render(request, 'perfumes/perfume_list.html', {'perfumes': perfumes})
 
 
-@supervisor_required
+@login_required
 def perfume_detail(request, pk):
     perfume = get_object_or_404(Perfume, pk=pk)
     return render(request, 'perfumes/perfume_detail.html', {'perfume': perfume})
