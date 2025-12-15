@@ -21,7 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/perfumes/', permanent=False)),
+    path('', RedirectView.as_view(url='/accounts/home/', permanent=False)),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('perfumes/', include('perfumes.urls')),
