@@ -21,6 +21,7 @@ class Perfume(models.Model):
     # Información básica
     nombre = models.CharField(max_length=200)
     marca = models.CharField(max_length=100)
+    distribuidor = models.CharField(max_length=150, blank=True, null=True, help_text="Distribuidor del producto")
     descripcion = models.TextField(blank=True, null=True)
     codigo_barras = models.CharField(max_length=50, unique=True, blank=True, null=True)
 
