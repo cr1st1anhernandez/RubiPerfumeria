@@ -1,0 +1,230 @@
+{% extends 'pos/base_pos.html' %}
+
+{% block title %}Punto de Venta - Rubi Perfumeria{% endblock %}
+
+{% block content %}
+<h2>PUNTO DE VENTA</h2>
+
+<table border="1" cellpadding="10" cellspacing="0" width="100%">
+<tr>
+<td valign="top" width="50%">
+    <h3>Buscar Productos</h3>
+    <input type="text" id="busqueda-input" placeholder="Buscar por nombre, marca o codigo de barras..." autofocus size="50">
+    <div id="resultados-busqueda"></div>
+
+    <p><strong>Instrucciones:</strong></p>
+    <ul>
+        <li>Escribe el nombre, marca o codigo de barras del producto</li>
+        <li>Haz clic en el producto para agregarlo a la venta</li>
+        <li>Puedes modificar cantidades en la venta actual</li>
+    </ul>
+</td>
+
+<td valign="top" width="50%">
+    <h3>Venta Actual</h3>
+
+    {% if items_venta %}
+    <table border="1" cellpadding="5" cellspacing="0" width="100%">
+        <tr>
+            <th>Producto</th>
+            <th>Precio</th>
+            <th>Cantidad</th>
+            <th>Subtotal</th>
+            <th>Acciones</th>
+        </tr>
+        {% for item in items_venta %}
+        <tr>
+            <td>
+                <strong>{{ item.perfume.marca }}</strong><br>
+                {{ item.perfume.nombre }} ({{ item.perfume.volumen }}ml)
+            </td>
+            <td>${{ item.precio_unitario }}</td>
+            <td>
+                <form method="POST" action="{% url 'pos:actualizar_cantidad' item.id %}">
+                    {% csrf_token %}
+                    <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" max="{{ item.perfume.stock }}" size="5">
+                    <button type="submit">Actualizar</button>
+                </form>
+            </td>
+            <td><strong>${{ item.calcular_subtotal }}</strong></td>
+            <td>
+                <form method="POST" action="{% url 'pos:eliminar_producto' item.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <p><strong>Subtotal:</strong> ${{ subtotal|floatformat:2 }}</p>
+    {% if descuento_general > 0 %}
+    <p><strong>Descuento ({{ descuento_general }}%):</strong> -${{ descuento_monto|floatformat:2 }}</p>
+    {% endif %}
+    <p><strong>TOTAL:</strong> ${{ total|floatformat:2 }}</p>
+    <p>Cantidad de productos: {{ cantidad_items }}</p>
+
+    <p>
+        <button onclick="mostrarPago()">PROCESAR PAGO</button>
+    </p>
+
+    <form method="POST" action="{% url 'pos:limpiar_venta' %}">
+        {% csrf_token %}
+        <button type="submit" onclick="return confirm('¿Estas seguro de que deseas cancelar esta venta?')">
+            CANCELAR VENTA
+        </button>
+    </form>
+
+    {% else %}
+    <p>No hay productos en la venta actual.</p>
+    <p>Busca y agrega productos para comenzar una nueva venta</p>
+    {% endif %}
+</td>
+</tr>
+</table>
+
+<!-- Modal para procesar pago -->
+<div id="modal-pago" style="display: none;">
+    <hr>
+    <h3>Procesar Pago en Efectivo</h3>
+    <form method="POST" action="{% url 'pos:completar_venta' %}">
+        {% csrf_token %}
+
+        <p><strong>Total a Pagar:</strong> ${{ total|floatformat:2 }}</p>
+
+        <p>
+            <label for="descuento_general">Descuento General (%):</label><br>
+            <input type="number" name="descuento_general" id="descuento_general" step="0.01" min="0" max="100" value="{{ descuento_general|default:0 }}" oninput="calcularCambio()">
+        </p>
+
+        <p>
+            <label for="monto-recibido">Monto Recibido en Efectivo:</label><br>
+            <input type="number" name="monto_recibido" id="monto-recibido" step="0.01" min="0" required oninput="calcularCambio()">
+        </p>
+
+        <p>
+            <strong>Cambio a Devolver:</strong><br>
+            <span id="cambio-display">$0.00</span>
+        </p>
+
+        <p>
+            <label for="notas">Notas (opcional):</label><br>
+            <textarea name="notas" id="notas" rows="2" cols="50"></textarea>
+        </p>
+
+        <button type="submit">COMPLETAR VENTA</button>
+        <button type="button" onclick="cerrarPago()">CANCELAR</button>
+    </form>
+    <hr>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const subtotalBase = {{ subtotal|default:0 }};
+
+    // Busqueda de productos
+    let timeoutBusqueda = null;
+    const inputBusqueda = document.getElementById('busqueda-input');
+
+    if (inputBusqueda) {
+        inputBusqueda.addEventListener('input', function(e) {
+            clearTimeout(timeoutBusqueda);
+            const query = e.target.value.trim();
+
+            if (query.length < 2) {
+                document.getElementById('resultados-busqueda').innerHTML = '';
+                return;
+            }
+
+            timeoutBusqueda = setTimeout(() => {
+                fetch(`/pos/buscar-producto/?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        mostrarResultados(data.productos);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            }, 300);
+        });
+    }
+
+    function mostrarResultados(productos) {
+        const contenedor = document.getElementById('resultados-busqueda');
+
+        if (productos.length === 0) {
+            contenedor.innerHTML = '<p>No se encontraron productos</p>';
+            return;
+        }
+
+        contenedor.innerHTML = productos.map(p => {
+            let stockText = p.stock > 0 ? `Stock: ${p.stock}` : 'SIN STOCK';
+            let botonDisabled = p.stock > 0 ? '' : 'disabled';
+            return `
+                <p>
+                    <strong>${p.nombre}</strong><br>
+                    ${p.codigo_barras ? 'Codigo: ' + p.codigo_barras + ' | ' : ''}
+                    Precio: $${p.precio} | ${stockText}<br>
+                    <button onclick="agregarProducto(${p.id})" ${botonDisabled}>Agregar</button>
+                </p>
+                <hr>
+            `;
+        }).join('');
+    }
+
+    function agregarProducto(perfumeId) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/pos/agregar-producto/${perfumeId}/`;
+
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}';
+
+        const cantidad = document.createElement('input');
+        cantidad.type = 'hidden';
+        cantidad.name = 'cantidad';
+        cantidad.value = '1';
+
+        form.appendChild(csrf);
+        form.appendChild(cantidad);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function mostrarPago() {
+        document.getElementById('modal-pago').style.display = 'block';
+        document.getElementById('monto-recibido').focus();
+    }
+
+    function cerrarPago() {
+        document.getElementById('modal-pago').style.display = 'none';
+    }
+
+    function calcularCambio() {
+        const descuentoGeneral = parseFloat(document.getElementById('descuento_general').value) || 0;
+        const descuentoMonto = subtotalBase * descuentoGeneral / 100;
+        const totalConDescuento = subtotalBase - descuentoMonto;
+
+        const montoRecibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
+        const cambio = montoRecibido - totalConDescuento;
+
+        const cambioDisplay = document.getElementById('cambio-display');
+
+        if (cambio >= 0) {
+            cambioDisplay.textContent = `$${cambio.toFixed(2)}`;
+        } else {
+            cambioDisplay.textContent = `FALTA: $${Math.abs(cambio).toFixed(2)}`;
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cerrarPago();
+        }
+    });
+</script>
+{% endblock %}
