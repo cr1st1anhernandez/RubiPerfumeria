@@ -1,47 +1,61 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - RubiPerfumeria</title>
+    <title>Iniciar Sesión — RubiPerfumeria</title>
+    <link rel="stylesheet" href="{% static 'css/premium-system.css' %}">
 </head>
 <body>
-    <div>
-        <h1>RubiPerfumeria</h1>
-        <h2>Iniciar Sesión</h2>
-
-        {% if messages %}
-        <ul>
+    {% if messages %}
+    <div class="container">
+        <ul class="messages">
             {% for message in messages %}
-            <li>{{ message }}</li>
+            <li class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </li>
             {% endfor %}
         </ul>
-        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="container-narrow" style="padding-top: 6rem;">
+        <small style="display: block; margin-bottom: 3rem;">Sistema de Gestión</small>
+        <h1 style="margin-bottom: 4rem;">RubiPerfumeria</h1>
 
         <form method="post">
             {% csrf_token %}
 
-            <div>
-                {{ form.username.label_tag }}
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">Usuario</label>
                 {{ form.username }}
-                {{ form.username.errors }}
+                {% if form.username.errors %}
+                    {% for error in form.username.errors %}
+                    <small style="color: var(--color-gray-600); display: block; margin-top: 0.5rem;">{{ error }}</small>
+                    {% endfor %}
+                {% endif %}
             </div>
 
-            <div>
-                {{ form.password.label_tag }}
+            <div class="form-group">
+                <label for="{{ form.password.id_for_label }}">Contraseña</label>
                 {{ form.password }}
-                {{ form.password.errors }}
+                {% if form.password.errors %}
+                    {% for error in form.password.errors %}
+                    <small style="color: var(--color-gray-600); display: block; margin-top: 0.5rem;">{{ error }}</small>
+                    {% endfor %}
+                {% endif %}
             </div>
 
             {% if form.non_field_errors %}
-            <ul>
+            <div style="margin-bottom: 2rem;">
                 {% for error in form.non_field_errors %}
-                <li>{{ error }}</li>
+                <small style="color: var(--color-gray-600);">{{ error }}</small>
                 {% endfor %}
-            </ul>
+            </div>
             {% endif %}
 
-            <button type="submit">Iniciar Sesión</button>
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 2rem;">Iniciar Sesión</button>
         </form>
     </div>
 </body>

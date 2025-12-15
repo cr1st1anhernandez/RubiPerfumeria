@@ -1,34 +1,47 @@
-{% extends 'perfumes/base.html' %}
+{% extends 'base.html' %}
 
-{% block title %}{{ action }} Perfume - Rubi Perfumeria{% endblock %}
+{% block title %}{{ action }} Perfume — RubiPerfumeria{% endblock %}
 
 {% block content %}
-<h2>{{ action }} Perfume</h2>
+<div class="container-narrow">
+    <small>Inventario</small>
+    <h1>{{ action }} Perfume</h1>
 
-<form method="post">
-    {% csrf_token %}
+    {% if form.errors %}
+    <div class="card mb-lg" style="border-left: 2px solid var(--color-black);">
+        <div class="card-body">
+            <small style="color: var(--color-gray-600);">Errores en el formulario</small>
+            <ul style="margin-top: var(--space-sm); list-style: none;">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
 
-    <table>
-        {{ form.as_table }}
-    </table>
+    <form method="post">
+        {% csrf_token %}
 
-    <p>
-        <button type="submit">Guardar</button>
-        <a href="{% if perfume %}{% url 'perfume_detail' perfume.pk %}{% else %}{% url 'perfume_list' %}{% endif %}">Cancelar</a>
-    </p>
-</form>
-
-{% if form.errors %}
-    <h3>Errores:</h3>
-    <ul>
         {% for field in form %}
-            {% for error in field.errors %}
-                <li>{{ field.label }}: {{ error }}</li>
-            {% endfor %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+            <small class="text-muted" style="display: block; margin-top: 0.5rem;">{{ field.help_text }}</small>
+            {% endif %}
+        </div>
         {% endfor %}
-        {% for error in form.non_field_errors %}
-            <li>{{ error }}</li>
-        {% endfor %}
-    </ul>
-{% endif %}
+
+        <div class="flex flex-gap mt-xl">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="{% if perfume %}{% url 'perfume_detail' perfume.pk %}{% else %}{% url 'perfume_list' %}{% endif %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
 {% endblock %}
