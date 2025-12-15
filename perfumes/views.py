@@ -1,19 +1,24 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from accounts.decorators import supervisor_required
 from .models import Perfume
 from .forms import PerfumeForm
 
 
+@supervisor_required
 def perfume_list(request):
     perfumes = Perfume.objects.all()
     return render(request, 'perfumes/perfume_list.html', {'perfumes': perfumes})
 
 
+@supervisor_required
 def perfume_detail(request, pk):
     perfume = get_object_or_404(Perfume, pk=pk)
     return render(request, 'perfumes/perfume_detail.html', {'perfume': perfume})
 
 
+@supervisor_required
 def perfume_create(request):
     if request.method == 'POST':
         form = PerfumeForm(request.POST)
@@ -26,6 +31,7 @@ def perfume_create(request):
     return render(request, 'perfumes/perfume_form.html', {'form': form, 'action': 'Crear'})
 
 
+@supervisor_required
 def perfume_update(request, pk):
     perfume = get_object_or_404(Perfume, pk=pk)
     if request.method == 'POST':
@@ -39,6 +45,7 @@ def perfume_update(request, pk):
     return render(request, 'perfumes/perfume_form.html', {'form': form, 'action': 'Editar', 'perfume': perfume})
 
 
+@supervisor_required
 def perfume_delete(request, pk):
     perfume = get_object_or_404(Perfume, pk=pk)
     if request.method == 'POST':

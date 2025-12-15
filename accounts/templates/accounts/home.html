@@ -1,0 +1,32 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Inicio - RubiPerfumeria{% endblock %}
+
+{% block content %}
+<div>
+    <h2>Bienvenido, {{ user.username }}</h2>
+
+    <p><strong>Rol:</strong> {{ user.profile.get_rol_display }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+
+    <div>
+        <h3>Accesos rápidos</h3>
+        <ul>
+            <li><a href="{% url 'perfume_list' %}">Ver Perfumes</a></li>
+            {% if user.profile.puede_gestionar_inventario %}
+            <li><a href="{% url 'perfume_create' %}">Crear Perfume</a></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    {% if user.profile.es_administrador %}
+    <div>
+        <strong>Nota:</strong> Tienes privilegios de administrador. Puedes gestionar todos los aspectos del sistema.
+    </div>
+    {% elif user.profile.es_supervisor %}
+    <div>
+        <strong>Nota:</strong> Tienes privilegios de supervisor. Puedes gestionar el inventario y visualizar reportes.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
