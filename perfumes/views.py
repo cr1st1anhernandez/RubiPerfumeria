@@ -294,6 +294,15 @@ def exportar_inventario_excel(perfumes, movimientos):
 
     return response
 
+    response = HttpResponse(
+        buffer,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f"inventario_{timezone.now().strftime('%Y%m%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response
+
 
 def exportar_inventario_pdf(perfumes, movimientos):
     """Exporta el inventario a PDF."""
