@@ -1,121 +1,191 @@
-{% extends 'pos/base_pos.html' %}
+{% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Punto de Venta - Rubi Perfumeria{% endblock %}
+{% block title %}Punto de Venta — RubiPerfumeria{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pos.css' %}">
+{% endblock %}
 
 {% block content %}
-<h2>PUNTO DE VENTA</h2>
+<div class="container">
+    <div class="mb-lg">
+        <small>Sistema POS</small>
+        <h1>Punto de Venta</h1>
+    </div>
 
-<table border="1" cellpadding="10" cellspacing="0" width="100%">
-<tr>
-<td valign="top" width="50%">
-    <h3>Buscar Productos</h3>
-    <input type="text" id="busqueda-input" placeholder="Buscar por nombre, marca o codigo de barras..." autofocus size="50">
-    <div id="resultados-busqueda"></div>
+    <div class="pos-layout">
+        <!-- Búsqueda de productos -->
+        <div class="pos-section">
+            <h2>Buscar Productos</h2>
+            <input
+                type="text"
+                id="busqueda-input"
+                class="pos-search"
+                placeholder="Nombre, marca o código de barras..."
+                autofocus
+            >
+            <div id="resultados-busqueda" class="search-results"></div>
 
-    <p><strong>Instrucciones:</strong></p>
-    <ul>
-        <li>Escribe el nombre, marca o codigo de barras del producto</li>
-        <li>Haz clic en el producto para agregarlo a la venta</li>
-        <li>Puedes modificar cantidades en la venta actual</li>
-    </ul>
-</td>
+            <div class="instructions">
+                <ul>
+                    <li>Escribe para buscar productos</li>
+                    <li>Haz clic en un producto para agregarlo</li>
+                    <li>Presiona ESC para cerrar el modal de pago</li>
+                </ul>
+            </div>
+        </div>
 
-<td valign="top" width="50%">
-    <h3>Venta Actual</h3>
+        <!-- Venta actual -->
+        <div class="pos-section">
+            <h2>Venta Actual</h2>
 
-    {% if items_venta %}
-    <table border="1" cellpadding="5" cellspacing="0" width="100%">
-        <tr>
-            <th>Producto</th>
-            <th>Precio</th>
-            <th>Cantidad</th>
-            <th>Subtotal</th>
-            <th>Acciones</th>
-        </tr>
-        {% for item in items_venta %}
-        <tr>
-            <td>
-                <strong>{{ item.perfume.marca }}</strong><br>
-                {{ item.perfume.nombre }} ({{ item.perfume.volumen }}ml)
-            </td>
-            <td>${{ item.precio_unitario }}</td>
-            <td>
-                <form method="POST" action="{% url 'pos:actualizar_cantidad' item.id %}">
-                    {% csrf_token %}
-                    <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" max="{{ item.perfume.stock }}" size="5">
-                    <button type="submit">Actualizar</button>
-                </form>
-            </td>
-            <td><strong>${{ item.calcular_subtotal }}</strong></td>
-            <td>
-                <form method="POST" action="{% url 'pos:eliminar_producto' item.id %}">
-                    {% csrf_token %}
-                    <button type="submit">Eliminar</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+            {% if items_venta %}
+            <div class="sale-items">
+                {% for item in items_venta %}
+                <div class="sale-item">
+                    <div>
+                        <div class="sale-item-brand">{{ item.perfume.marca }}</div>
+                        <div class="sale-item-name">{{ item.perfume.nombre }}</div>
+                        <small class="text-muted">{{ item.perfume.volumen }}ml</small>
+                    </div>
 
-    <p><strong>Subtotal:</strong> ${{ subtotal|floatformat:2 }}</p>
-    {% if descuento_general > 0 %}
-    <p><strong>Descuento ({{ descuento_general }}%):</strong> -${{ descuento_monto|floatformat:2 }}</p>
-    {% endif %}
-    <p><strong>TOTAL:</strong> ${{ total|floatformat:2 }}</p>
-    <p>Cantidad de productos: {{ cantidad_items }}</p>
+                    <div>
+                        <small>Precio</small>
+                        <div>${{ item.precio_unitario|floatformat:2 }}</div>
+                    </div>
 
-    <p>
-        <button onclick="mostrarPago()">PROCESAR PAGO</button>
-    </p>
+                    <div class="sale-item-quantity">
+                        <form method="POST" action="{% url 'pos:actualizar_cantidad' item.id %}" style="display: flex; align-items: center; gap: 0.5rem;">
+                            {% csrf_token %}
+                            <input
+                                type="number"
+                                name="cantidad"
+                                value="{{ item.cantidad }}"
+                                min="1"
+                                max="{{ item.perfume.stock }}"
+                                class="quantity-input"
+                            >
+                            <button type="submit" class="btn-tertiary">OK</button>
+                        </form>
+                    </div>
 
-    <form method="POST" action="{% url 'pos:limpiar_venta' %}">
-        {% csrf_token %}
-        <button type="submit" onclick="return confirm('¿Estas seguro de que deseas cancelar esta venta?')">
-            CANCELAR VENTA
-        </button>
-    </form>
+                    <div style="text-align: right;">
+                        <small>Subtotal</small>
+                        <div><strong>${{ item.calcular_subtotal|floatformat:2 }}</strong></div>
+                        <form method="POST" action="{% url 'pos:eliminar_producto' item.id %}" style="margin-top: 0.5rem;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-tertiary">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
 
-    {% else %}
-    <p>No hay productos en la venta actual.</p>
-    <p>Busca y agrega productos para comenzar una nueva venta</p>
-    {% endif %}
-</td>
-</tr>
-</table>
+            <div class="sale-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>${{ subtotal|floatformat:2 }}</span>
+                </div>
+                {% if descuento_general > 0 %}
+                <div class="summary-row">
+                    <span>Descuento ({{ descuento_general }}%)</span>
+                    <span>-${{ descuento_monto|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span>${{ total|floatformat:2 }}</span>
+                </div>
+                <div class="summary-row">
+                    <small>{{ cantidad_items }} {% if cantidad_items == 1 %}producto{% else %}productos{% endif %}</small>
+                </div>
+            </div>
 
-<!-- Modal para procesar pago -->
-<div id="modal-pago" style="display: none;">
-    <hr>
-    <h3>Procesar Pago en Efectivo</h3>
-    <form method="POST" action="{% url 'pos:completar_venta' %}">
-        {% csrf_token %}
+            <div class="flex flex-gap mt-lg">
+                <button onclick="mostrarPago()" class="btn btn-primary btn-lg" style="flex: 1;">Procesar Pago</button>
+            </div>
 
-        <p><strong>Total a Pagar:</strong> ${{ total|floatformat:2 }}</p>
+            <form method="POST" action="{% url 'pos:limpiar_venta' %}" class="mt-md">
+                {% csrf_token %}
+                <button
+                    type="submit"
+                    class="btn btn-secondary btn-sm"
+                    onclick="return confirm('¿Cancelar esta venta?')"
+                    style="width: 100%;"
+                >
+                    Cancelar Venta
+                </button>
+            </form>
 
-        <p>
-            <label for="descuento_general">Descuento General (%):</label><br>
-            <input type="number" name="descuento_general" id="descuento_general" step="0.01" min="0" max="100" value="{{ descuento_general|default:0 }}" oninput="calcularCambio()">
-        </p>
+            {% else %}
+            <div class="empty-state">
+                <p>No hay productos en la venta</p>
+                <p><small>Busca y agrega productos para comenzar</small></p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
 
-        <p>
-            <label for="monto-recibido">Monto Recibido en Efectivo:</label><br>
-            <input type="number" name="monto_recibido" id="monto-recibido" step="0.01" min="0" required oninput="calcularCambio()">
-        </p>
+<!-- Modal de pago -->
+<div id="modal-pago" style="display: none;" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <small>Procesar Venta</small>
+            <h2>Pago en Efectivo</h2>
+        </div>
 
-        <p>
-            <strong>Cambio a Devolver:</strong><br>
-            <span id="cambio-display">$0.00</span>
-        </p>
+        <div class="payment-amount">
+            ${{ total|floatformat:2 }}
+        </div>
 
-        <p>
-            <label for="notas">Notas (opcional):</label><br>
-            <textarea name="notas" id="notas" rows="2" cols="50"></textarea>
-        </p>
+        <form method="POST" action="{% url 'pos:completar_venta' %}">
+            {% csrf_token %}
 
-        <button type="submit">COMPLETAR VENTA</button>
-        <button type="button" onclick="cerrarPago()">CANCELAR</button>
-    </form>
-    <hr>
+            <div class="form-group">
+                <label for="descuento_general">Descuento General (%)</label>
+                <input
+                    type="number"
+                    name="descuento_general"
+                    id="descuento_general"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value="{{ descuento_general|default:0 }}"
+                    oninput="calcularCambio()"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="monto-recibido">Monto Recibido</label>
+                <input
+                    type="number"
+                    name="monto_recibido"
+                    id="monto-recibido"
+                    step="0.01"
+                    min="0"
+                    required
+                    oninput="calcularCambio()"
+                >
+            </div>
+
+            <div class="change-display" id="cambio-container">
+                <small>Cambio</small>
+                <div id="cambio-display">$0.00</div>
+            </div>
+
+            <div class="form-group">
+                <label for="notas">Notas (opcional)</label>
+                <textarea name="notas" id="notas" rows="2"></textarea>
+            </div>
+
+            <div class="flex flex-gap mt-xl">
+                <button type="submit" class="btn btn-primary btn-lg" style="flex: 1;">Completar Venta</button>
+                <button type="button" onclick="cerrarPago()" class="btn btn-secondary btn-lg">Cancelar</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 {% endblock %}
@@ -124,7 +194,7 @@
 <script>
     const subtotalBase = {{ subtotal|default:0 }};
 
-    // Busqueda de productos
+    // Búsqueda de productos
     let timeoutBusqueda = null;
     const inputBusqueda = document.getElementById('busqueda-input');
 
@@ -155,21 +225,24 @@
         const contenedor = document.getElementById('resultados-busqueda');
 
         if (productos.length === 0) {
-            contenedor.innerHTML = '<p>No se encontraron productos</p>';
+            contenedor.innerHTML = '<p class="text-muted" style="margin-top: 2rem;">No se encontraron productos</p>';
             return;
         }
 
         contenedor.innerHTML = productos.map(p => {
-            let stockText = p.stock > 0 ? `Stock: ${p.stock}` : 'SIN STOCK';
-            let botonDisabled = p.stock > 0 ? '' : 'disabled';
+            let stockText = p.stock > 0 ? `Stock: ${p.stock}` : 'Sin stock';
+            let disabled = p.stock > 0 ? '' : 'disabled';
             return `
-                <p>
-                    <strong>${p.nombre}</strong><br>
-                    ${p.codigo_barras ? 'Codigo: ' + p.codigo_barras + ' | ' : ''}
-                    Precio: $${p.precio} | ${stockText}<br>
-                    <button onclick="agregarProducto(${p.id})" ${botonDisabled}>Agregar</button>
-                </p>
-                <hr>
+                <div class="product-result">
+                    <div class="product-name">${p.nombre}</div>
+                    <div class="product-info">
+                        ${p.codigo_barras ? 'Código: ' + p.codigo_barras + ' • ' : ''}
+                        $${p.precio} • ${stockText}
+                    </div>
+                    <button onclick="agregarProducto(${p.id})" class="btn btn-tertiary" style="margin-top: 0.5rem;" ${disabled}>
+                        Agregar
+                    </button>
+                </div>
             `;
         }).join('');
     }
@@ -196,7 +269,7 @@
     }
 
     function mostrarPago() {
-        document.getElementById('modal-pago').style.display = 'block';
+        document.getElementById('modal-pago').style.display = 'flex';
         document.getElementById('monto-recibido').focus();
     }
 
@@ -213,11 +286,14 @@
         const cambio = montoRecibido - totalConDescuento;
 
         const cambioDisplay = document.getElementById('cambio-display');
+        const cambioContainer = document.getElementById('cambio-container');
 
         if (cambio >= 0) {
             cambioDisplay.textContent = `$${cambio.toFixed(2)}`;
+            cambioContainer.className = 'change-display positive';
         } else {
-            cambioDisplay.textContent = `FALTA: $${Math.abs(cambio).toFixed(2)}`;
+            cambioDisplay.textContent = `Falta: $${Math.abs(cambio).toFixed(2)}`;
+            cambioContainer.className = 'change-display negative';
         }
     }
 
