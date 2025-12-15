@@ -7,6 +7,9 @@ urlpatterns = [
     # Vista principal del POS
     path('', views.pos_principal, name='pos_principal'),
 
+    # Dashboard
+    path('dashboard/', views.dashboard, name='dashboard'),
+
     # Gestión de venta temporal (carrito)
     path('buscar-producto/', views.buscar_producto, name='buscar_producto'),
     path('agregar-producto/<int:perfume_id>/', views.agregar_producto, name='agregar_producto'),

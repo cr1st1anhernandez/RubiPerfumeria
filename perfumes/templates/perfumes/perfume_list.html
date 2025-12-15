@@ -1,11 +1,88 @@
 {% extends 'perfumes/base.html' %}
 
-{% block title %}Lista de Perfumes - Rubi Perfumeria{% endblock %}
+{% block title %}Inventario - Rubi Perfumeria{% endblock %}
 
 {% block content %}
-<h2>Lista de Perfumes</h2>
+<style>
+    .export-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        color: white;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .section-title {
+        margin-top: 30px;
+        margin-bottom: 15px;
+        color: #333;
+        font-size: 18px;
+    }
+
+    .stock-bajo {
+        background-color: #fee;
+        color: #d63031;
+        font-weight: bold;
+    }
+
+    .info-box {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 14px;
+        color: #666;
+    }
+</style>
+
+<h2>📦 Inventario de Productos</h2>
+
+<!-- Botones de exportación -->
+<div class="export-buttons">
+    <a href="?exportar=pdf" class="btn btn-danger">
+        📄 Exportar a PDF
+    </a>
+    <a href="?exportar=excel" class="btn btn-success">
+        📊 Exportar a Excel
+    </a>
+</div>
 
 {% if perfumes %}
+    <!-- Información sobre el inventario -->
+    <div class="info-box">
+        📌 Total de productos: <strong>{{ perfumes.count }}</strong>
+        {% if movimientos %}
+        | Movimientos recientes: <strong>{{ total_movimientos }}</strong> (mostrando últimos 50)
+        {% endif %}
+    </div>
+
+    <!-- Tabla de productos -->
+    <h3 class="section-title">Stock Actual</h3>
     <table border="1" cellpadding="10" cellspacing="0">
         <thead>
             <tr>
@@ -21,13 +98,13 @@
         </thead>
         <tbody>
             {% for perfume in perfumes %}
-            <tr>
+            <tr {% if perfume.stock < 10 %}class="stock-bajo"{% endif %}>
                 <td>{{ perfume.marca }}</td>
                 <td>{{ perfume.nombre }}</td>
                 <td>{{ perfume.get_tipo_display }}</td>
                 <td>{{ perfume.get_genero_display }}</td>
                 <td>{{ perfume.volumen }} ml</td>
-                <td>${{ perfume.precio }}</td>
+                <td>${{ perfume.precio|floatformat:2 }}</td>
                 <td>{{ perfume.stock }}</td>
                 <td>
                     <a href="{% url 'perfume_detail' perfume.pk %}">Ver</a> |
@@ -38,6 +115,44 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Tabla de movimientos de inventario -->
+    {% if movimientos %}
+    <h3 class="section-title">Últimos Movimientos de Inventario</h3>
+    <table border="1" cellpadding="10" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Producto</th>
+                <th>Marca</th>
+                <th>Tipo Movimiento</th>
+                <th>Cantidad</th>
+                <th>Usuario</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for movimiento in movimientos %}
+            <tr>
+                <td>{{ movimiento.fecha_creacion|date:"d/m/Y" }}</td>
+                <td>{{ movimiento.fecha_creacion|time:"H:i:s" }}</td>
+                <td>{{ movimiento.perfume.nombre }}</td>
+                <td>{{ movimiento.perfume.marca }}</td>
+                <td>{{ movimiento.get_tipo_movimiento_display }}</td>
+                <td>{{ movimiento.cantidad }}</td>
+                <td>{{ movimiento.usuario.username }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 20px; color: #999;">
+                    No hay movimientos de inventario registrados
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
 {% else %}
     <p>No hay perfumes registrados.</p>
     <p><a href="{% url 'perfume_create' %}">Agregar el primer perfume</a></p>
