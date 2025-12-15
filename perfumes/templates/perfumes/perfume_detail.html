@@ -1,84 +1,115 @@
-{% extends 'perfumes/base.html' %}
+{% extends 'base.html' %}
 
-{% block title %}{{ perfume.nombre }} - Rubi Perfumeria{% endblock %}
+{% block title %}{{ perfume.nombre }} — RubiPerfumeria{% endblock %}
 
 {% block content %}
-<h2>Detalle del Perfume</h2>
+<div class="container-narrow">
+    <small>Inventario</small>
+    <h1>{{ perfume.marca }} {{ perfume.nombre }}</h1>
 
-<table border="1" cellpadding="10" cellspacing="0">
-    <tr>
-        <th>Marca:</th>
-        <td>{{ perfume.marca }}</td>
-    </tr>
-    <tr>
-        <th>Nombre:</th>
-        <td>{{ perfume.nombre }}</td>
-    </tr>
-    <tr>
-        <th>Descripcion:</th>
-        <td>{{ perfume.descripcion|default:"Sin descripcion" }}</td>
-    </tr>
-    <tr>
-        <th>Codigo de Barras:</th>
-        <td>{{ perfume.codigo_barras|default:"No especificado" }}</td>
-    </tr>
-    <tr>
-        <th>Tipo:</th>
-        <td>{{ perfume.get_tipo_display }}</td>
-    </tr>
-    <tr>
-        <th>Genero:</th>
-        <td>{{ perfume.get_genero_display }}</td>
-    </tr>
-    <tr>
-        <th>Notas Superiores:</th>
-        <td>{{ perfume.notas_superiores }}</td>
-    </tr>
-    <tr>
-        <th>Notas Medias:</th>
-        <td>{{ perfume.notas_medias }}</td>
-    </tr>
-    <tr>
-        <th>Notas Base:</th>
-        <td>{{ perfume.notas_base }}</td>
-    </tr>
-    <tr>
-        <th>Volumen:</th>
-        <td>{{ perfume.volumen }} ml</td>
-    </tr>
-    <tr>
-        <th>Concentracion:</th>
-        <td>{{ perfume.concentracion|default:"No especificado" }}{% if perfume.concentracion %}%{% endif %}</td>
-    </tr>
-    <tr>
-        <th>Año de Lanzamiento:</th>
-        <td>{{ perfume.anio_lanzamiento|default:"No especificado" }}</td>
-    </tr>
-    <tr>
-        <th>Precio:</th>
-        <td>${{ perfume.precio }}</td>
-    </tr>
-    <tr>
-        <th>Stock:</th>
-        <td>{{ perfume.stock }} unidades</td>
-    </tr>
-    <tr>
-        <th>Estado:</th>
-        <td>{% if perfume.esta_en_stock %}Disponible{% else %}Sin stock{% endif %}</td>
-    </tr>
-    <tr>
-        <th>Fecha de Creacion:</th>
-        <td>{{ perfume.fecha_creacion }}</td>
-    </tr>
-    <tr>
-        <th>Ultima Actualizacion:</th>
-        <td>{{ perfume.fecha_actualizacion }}</td>
-    </tr>
-</table>
+    <div class="card mt-lg">
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
+                <div>
+                    <small>Marca</small>
+                    <p>{{ perfume.marca }}</p>
+                </div>
+                <div>
+                    <small>Nombre</small>
+                    <p>{{ perfume.nombre }}</p>
+                </div>
+            </div>
 
-<p>
-    <a href="{% url 'perfume_update' perfume.pk %}">Editar</a> |
-    <a href="{% url 'perfume_delete' perfume.pk %}">Eliminar</a> |
-    <a href="{% url 'perfume_list' %}">Volver a la lista</a>
-</p>
+            {% if perfume.descripcion %}
+            <div class="mb-lg">
+                <small>Descripción</small>
+                <p>{{ perfume.descripcion }}</p>
+            </div>
+            {% endif %}
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg); margin-bottom: var(--space-lg);">
+                <div>
+                    <small>Tipo</small>
+                    <p>{{ perfume.get_tipo_display }}</p>
+                </div>
+                <div>
+                    <small>Género</small>
+                    <p>{{ perfume.get_genero_display }}</p>
+                </div>
+                <div>
+                    <small>Volumen</small>
+                    <p>{{ perfume.volumen }} ml</p>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-lg); margin-top: var(--space-lg); margin-bottom: var(--space-lg);">
+                <div>
+                    <small>Notas Superiores</small>
+                    <p>{{ perfume.notas_superiores|default:"—" }}</p>
+                </div>
+                <div>
+                    <small>Notas Medias</small>
+                    <p>{{ perfume.notas_medias|default:"—" }}</p>
+                </div>
+                <div>
+                    <small>Notas Base</small>
+                    <p>{{ perfume.notas_base|default:"—" }}</p>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-lg); margin-top: var(--space-lg);">
+                <div>
+                    <small>Precio</small>
+                    <p><strong>${{ perfume.precio|floatformat:2 }}</strong></p>
+                </div>
+                <div>
+                    <small>Stock</small>
+                    <p><strong>{{ perfume.stock }}</strong> unidades</p>
+                </div>
+                <div>
+                    <small>Código de Barras</small>
+                    <p>{{ perfume.codigo_barras|default:"—" }}</p>
+                </div>
+                <div>
+                    <small>Estado</small>
+                    <p>{% if perfume.esta_en_stock %}Disponible{% else %}Sin stock{% endif %}</p>
+                </div>
+            </div>
+
+            {% if perfume.concentracion or perfume.anio_lanzamiento %}
+            <div class="divider"></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-top: var(--space-lg);">
+                {% if perfume.concentracion %}
+                <div>
+                    <small>Concentración</small>
+                    <p>{{ perfume.concentracion }}%</p>
+                </div>
+                {% endif %}
+                {% if perfume.anio_lanzamiento %}
+                <div>
+                    <small>Año de Lanzamiento</small>
+                    <p>{{ perfume.anio_lanzamiento }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="flex flex-gap mt-lg">
+        {% if user.profile.puede_gestionar_inventario %}
+        <a href="{% url 'perfume_update' perfume.pk %}" class="btn btn-primary btn-sm">Editar</a>
+        <a href="{% url 'perfume_delete' perfume.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+        {% endif %}
+        <a href="{% url 'perfume_list' %}" class="btn btn-secondary btn-sm">Volver</a>
+    </div>
+
+    <div class="mt-lg">
+        <small class="text-muted">Creado: {{ perfume.fecha_creacion|date:"d/m/Y H:i" }} • Actualizado: {{ perfume.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+    </div>
+</div>
 {% endblock %}
