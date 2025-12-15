@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Ventas — RubiPerfumeria{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="flex-between mb-lg">
+        <div>
+            <small>Sistema POS</small>
+            <h1>Consultar Ventas</h1>
+        </div>
+    </div>
+
+    <form method="GET" class="mb-lg">
+        <div class="form-group">
+            <label for="estado">Filtrar por Estado</label>
+            <select name="estado" id="estado" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                <option value="COMPLETADA" {% if estado_seleccionado == 'COMPLETADA' %}selected{% endif %}>Completadas</option>
+                <option value="CANCELADA" {% if estado_seleccionado == 'CANCELADA' %}selected{% endif %}>Canceladas</option>
+                <option value="DEVUELTA" {% if estado_seleccionado == 'DEVUELTA' %}selected{% endif %}>Devueltas</option>
+            </select>
+        </div>
+        {% if estado_seleccionado %}
+        <a href="{% url 'pos:lista_ventas' %}" class="btn-tertiary">Limpiar Filtros</a>
+        {% endif %}
+    </form>
+
+    {% if ventas %}
+    <table>
+        <thead>
+            <tr>
+                <th>Ticket</th>
+                <th>Fecha</th>
+                <th>Cajero</th>
+                <th>Total</th>
+                <th>Método</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for venta in ventas %}
+            <tr>
+                <td><strong>{{ venta.numero_ticket }}</strong></td>
+                <td>{{ venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                <td>{{ venta.cajero.username }}</td>
+                <td><strong>${{ venta.total|floatformat:2 }}</strong></td>
+                <td>{{ venta.get_metodo_pago_display }}</td>
+                <td><small>{{ venta.get_estado_display }}</small></td>
+                <td style="text-align: right;">
+                    <a href="{% url 'pos:detalle_venta' venta.id %}" class="btn-tertiary">Ver</a>
+                    <a href="{% url 'pos:generar_ticket_pdf' venta.id %}" class="btn-tertiary">PDF</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="text-center mt-xl">
+        <p class="text-muted">No se encontraron ventas con los filtros seleccionados</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

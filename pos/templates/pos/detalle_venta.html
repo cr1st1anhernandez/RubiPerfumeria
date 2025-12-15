@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Venta {{ venta.numero_ticket }} — RubiPerfumeria{% endblock %}
+
+{% block content %}
+<div class="container-narrow">
+    <small>Ventas</small>
+    <h1>Detalle de Venta</h1>
+
+    <!-- Información General -->
+    <div class="card mt-lg">
+        <div class="card-header">
+            <h2 class="card-title">Información General</h2>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-md);">
+                <div>
+                    <small>Número de Ticket</small>
+                    <p><strong>{{ venta.numero_ticket }}</strong></p>
+                </div>
+                <div>
+                    <small>Estado</small>
+                    <p><strong>{{ venta.get_estado_display }}</strong></p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-md);">
+                <div>
+                    <small>Fecha y Hora</small>
+                    <p>{{ venta.fecha_creacion|date:"d/m/Y H:i:s" }}</p>
+                </div>
+                <div>
+                    <small>Cajero</small>
+                    <p>{{ venta.cajero.get_full_name|default:venta.cajero.username }}</p>
+                </div>
+            </div>
+
+            <div>
+                <small>Método de Pago</small>
+                <p>{{ venta.get_metodo_pago_display }}</p>
+            </div>
+
+            {% if venta.notas %}
+            <div class="mt-md">
+                <small>Notas</small>
+                <p>{{ venta.notas }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Productos -->
+    <div class="mt-lg">
+        <h2 class="mb-md">Productos</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio Unit.</th>
+                    <th>Cantidad</th>
+                    <th>Descuento</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detalle in venta.detalles.all %}
+                <tr>
+                    <td>
+                        <strong>{{ detalle.nombre_producto }}</strong><br>
+                        <small class="text-muted">SKU: {{ detalle.perfume.codigo_barras|default:"N/A" }}</small>
+                    </td>
+                    <td>${{ detalle.precio_unitario|floatformat:2 }}</td>
+                    <td><strong>{{ detalle.cantidad }}</strong></td>
+                    <td>
+                        {% if detalle.descuento_porcentaje > 0 %}
+                        {{ detalle.descuento_porcentaje }}% (-${{ detalle.descuento_monto|floatformat:2 }})
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td><strong>${{ detalle.subtotal|floatformat:2 }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Resumen de Pago -->
+    <div class="card mt-lg">
+        <div class="card-header">
+            <h2 class="card-title">Resumen de Pago</h2>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; justify-content: space-between; padding: var(--space-xs) 0; font-size: var(--text-sm);">
+                <span>Subtotal</span>
+                <span><strong>${{ venta.subtotal|floatformat:2 }}</strong></span>
+            </div>
+
+            {% if venta.descuento_porcentaje > 0 %}
+            <div style="display: flex; justify-content: space-between; padding: var(--space-xs) 0; font-size: var(--text-sm);">
+                <span>Descuento ({{ venta.descuento_porcentaje }}%)</span>
+                <span><strong>-${{ venta.descuento_monto|floatformat:2 }}</strong></span>
+            </div>
+            {% endif %}
+
+            <div style="display: flex; justify-content: space-between; padding: var(--space-sm) 0; font-size: var(--text-lg); font-weight: var(--font-weight-bold); border-top: 1px solid var(--color-gray-300); margin-top: var(--space-sm);">
+                <span>Total</span>
+                <span>${{ venta.total|floatformat:2 }}</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="display: flex; justify-content: space-between; padding: var(--space-xs) 0; font-size: var(--text-sm);">
+                <span>Efectivo Recibido</span>
+                <span>${{ venta.monto_recibido|floatformat:2 }}</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; padding: var(--space-xs) 0; font-size: var(--text-sm);">
+                <span>Cambio</span>
+                <span>${{ venta.cambio|floatformat:2 }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="mt-lg">
+        <h2 class="mb-md">Acciones</h2>
+
+        <div class="flex flex-gap">
+            <a href="{% url 'pos:lista_ventas' %}" class="btn btn-secondary btn-sm">Volver a Ventas</a>
+            <a href="{% url 'pos:generar_ticket_pdf' venta.id %}" class="btn btn-secondary btn-sm">Descargar PDF</a>
+        </div>
+
+        {% if puede_devolver %}
+        <form method="POST" action="{% url 'pos:procesar_devolucion' venta.id %}"
+              onsubmit="return confirm('¿Procesar devolución de esta venta?');" class="mt-lg">
+            {% csrf_token %}
+            <input type="hidden" name="confirmar" value="SI">
+
+            <div class="form-group">
+                <label for="motivo">Motivo de devolución</label>
+                <textarea name="motivo" id="motivo" rows="3" required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-danger btn-sm">Procesar Devolución</button>
+        </form>
+        {% elif venta.estado == 'DEVUELTA' %}
+        <p class="mt-lg text-muted">Esta venta ya fue devuelta</p>
+        {% else %}
+        <p class="mt-lg text-muted">No se puede devolver (fuera del periodo de 30 días)</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

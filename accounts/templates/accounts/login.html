@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión — RubiPerfumeria</title>
+    <link rel="stylesheet" href="{% static 'css/premium-system.css' %}">
+</head>
+<body>
+    {% if messages %}
+    <div class="container">
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="container-narrow" style="padding-top: 6rem;">
+        <small style="display: block; margin-bottom: 3rem;">Sistema de Gestión</small>
+        <h1 style="margin-bottom: 4rem;">RubiPerfumeria</h1>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">Usuario</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    {% for error in form.username.errors %}
+                    <small style="color: var(--color-gray-600); display: block; margin-top: 0.5rem;">{{ error }}</small>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.password.id_for_label }}">Contraseña</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    {% for error in form.password.errors %}
+                    <small style="color: var(--color-gray-600); display: block; margin-top: 0.5rem;">{{ error }}</small>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            {% if form.non_field_errors %}
+            <div style="margin-bottom: 2rem;">
+                {% for error in form.non_field_errors %}
+                <small style="color: var(--color-gray-600);">{{ error }}</small>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 2rem;">Iniciar Sesión</button>
+        </form>
+    </div>
+</body>
+</html>

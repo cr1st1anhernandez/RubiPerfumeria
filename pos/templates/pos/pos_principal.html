@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Punto de Venta — RubiPerfumeria{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="mb-lg">
+        <small>Sistema POS</small>
+        <h1>Punto de Venta</h1>
+    </div>
+
+    <div class="pos-layout">
+        <!-- Búsqueda de productos -->
+        <div class="pos-section">
+            <h2>Buscar Productos</h2>
+            <input
+                type="text"
+                id="busqueda-input"
+                class="pos-search"
+                placeholder="Nombre, marca o código de barras..."
+                autofocus
+            >
+            <div id="resultados-busqueda" class="search-results"></div>
+
+            <div class="instructions">
+                <ul>
+                    <li>Escribe para buscar productos</li>
+                    <li>Haz clic en un producto para agregarlo</li>
+                    <li>Presiona ESC para cerrar el modal de pago</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Venta actual -->
+        <div class="pos-section">
+            <h2>Venta Actual</h2>
+
+            {% if items_venta %}
+            <div class="sale-items">
+                {% for item in items_venta %}
+                <div class="sale-item">
+                    <div>
+                        <div class="sale-item-brand">{{ item.perfume.marca }}</div>
+                        <div class="sale-item-name">{{ item.perfume.nombre }}</div>
+                        <small class="text-muted">{{ item.perfume.volumen }}ml</small>
+                    </div>
+
+                    <div>
+                        <small>Precio</small>
+                        <div>${{ item.precio_unitario|floatformat:2 }}</div>
+                    </div>
+
+                    <div class="sale-item-quantity">
+                        <form method="POST" action="{% url 'pos:actualizar_cantidad' item.id %}" style="display: flex; align-items: center; gap: 0.5rem;">
+                            {% csrf_token %}
+                            <input
+                                type="number"
+                                name="cantidad"
+                                value="{{ item.cantidad }}"
+                                min="1"
+                                max="{{ item.perfume.stock }}"
+                                class="quantity-input"
+                            >
+                            <button type="submit" class="btn-tertiary">OK</button>
+                        </form>
+                    </div>
+
+                    <div style="text-align: right;">
+                        <small>Subtotal</small>
+                        <div><strong>${{ item.calcular_subtotal|floatformat:2 }}</strong></div>
+                        <form method="POST" action="{% url 'pos:eliminar_producto' item.id %}" style="margin-top: 0.5rem;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-tertiary">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="sale-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>${{ subtotal|floatformat:2 }}</span>
+                </div>
+                {% if descuento_general > 0 %}
+                <div class="summary-row">
+                    <span>Descuento ({{ descuento_general }}%)</span>
+                    <span>-${{ descuento_monto|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span>${{ total|floatformat:2 }}</span>
+                </div>
+                <div class="summary-row">
+                    <small>{{ cantidad_items }} {% if cantidad_items == 1 %}producto{% else %}productos{% endif %}</small>
+                </div>
+            </div>
+
+            <div class="flex flex-gap mt-lg">
+                <button onclick="mostrarPago()" class="btn btn-primary btn-lg" style="flex: 1;">Procesar Pago</button>
+            </div>
+
+            <form method="POST" action="{% url 'pos:limpiar_venta' %}" class="mt-md">
+                {% csrf_token %}
+                <button
+                    type="submit"
+                    class="btn btn-secondary btn-sm"
+                    onclick="return confirm('¿Cancelar esta venta?')"
+                    style="width: 100%;"
+                >
+                    Cancelar Venta
+                </button>
+            </form>
+
+            {% else %}
+            <div class="empty-state">
+                <p>No hay productos en la venta</p>
+                <p><small>Busca y agrega productos para comenzar</small></p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de pago -->
+<div id="modal-pago" style="display: none;" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <small>Procesar Venta</small>
+            <h2>Pago en Efectivo</h2>
+        </div>
+
+        <div class="payment-amount">
+            ${{ total|floatformat:2 }}
+        </div>
+
+        <form method="POST" action="{% url 'pos:completar_venta' %}">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="descuento_general">Descuento General (%)</label>
+                <input
+                    type="number"
+                    name="descuento_general"
+                    id="descuento_general"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value="{{ descuento_general|default:0 }}"
+                    oninput="calcularCambio()"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="monto-recibido">Monto Recibido</label>
+                <input
+                    type="number"
+                    name="monto_recibido"
+                    id="monto-recibido"
+                    step="0.01"
+                    min="0"
+                    required
+                    oninput="calcularCambio()"
+                >
+            </div>
+
+            <div class="change-display" id="cambio-container">
+                <small>Cambio</small>
+                <div id="cambio-display">$0.00</div>
+            </div>
+
+            <div class="form-group">
+                <label for="notas">Notas (opcional)</label>
+                <textarea name="notas" id="notas" rows="2"></textarea>
+            </div>
+
+            <div class="flex flex-gap mt-xl">
+                <button type="submit" id="btn-completar-venta" class="btn btn-primary btn-lg" style="flex: 1;">Completar Venta</button>
+                <button type="button" onclick="cerrarPago()" class="btn btn-secondary btn-lg">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const subtotalBase = {{ subtotal|default:0 }};
+
+    // Búsqueda de productos
+    let timeoutBusqueda = null;
+    const inputBusqueda = document.getElementById('busqueda-input');
+
+    if (inputBusqueda) {
+        // Restaurar el valor del buscador después de recargar
+        const savedSearchValue = sessionStorage.getItem('pos_search_value');
+        if (savedSearchValue) {
+            inputBusqueda.value = savedSearchValue;
+            sessionStorage.removeItem('pos_search_value');
+
+            // Realizar la búsqueda automáticamente
+            if (savedSearchValue.length >= 2) {
+                fetch(`/pos/buscar-producto/?q=${encodeURIComponent(savedSearchValue)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        mostrarResultados(data.productos);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            }
+        }
+
+        inputBusqueda.addEventListener('input', function(e) {
+            clearTimeout(timeoutBusqueda);
+            const query = e.target.value.trim();
+
+            if (query.length < 2) {
+                document.getElementById('resultados-busqueda').innerHTML = '';
+                return;
+            }
+
+            timeoutBusqueda = setTimeout(() => {
+                fetch(`/pos/buscar-producto/?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        mostrarResultados(data.productos);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            }, 300);
+        });
+    }
+
+    function mostrarResultados(productos) {
+        const contenedor = document.getElementById('resultados-busqueda');
+
+        if (productos.length === 0) {
+            contenedor.innerHTML = '<p class="text-muted" style="margin-top: 2rem;">No se encontraron productos</p>';
+            return;
+        }
+
+        contenedor.innerHTML = productos.map(p => {
+            let stockText = p.stock > 0 ? `Stock: ${p.stock}` : 'Sin stock';
+            let disabled = p.stock > 0 ? '' : 'disabled';
+            return `
+                <div class="product-result">
+                    <div class="product-name">${p.nombre}</div>
+                    <div class="product-info">
+                        ${p.codigo_barras ? 'Código: ' + p.codigo_barras + ' • ' : ''}
+                        $${p.precio} • ${stockText}
+                    </div>
+                    <button onclick="agregarProducto(${p.id})" class="btn btn-tertiary" style="margin-top: 0.5rem;" ${disabled}>
+                        Agregar
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function agregarProducto(perfumeId) {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('cantidad', '1');
+
+        // Guardar el valor del buscador antes de recargar
+        const searchValue = inputBusqueda.value;
+        sessionStorage.setItem('pos_search_value', searchValue);
+
+        fetch(`/pos/agregar-producto/${perfumeId}/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Recargar la página
+                window.location.reload();
+            } else {
+                console.error('Error al agregar producto');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    function mostrarPago() {
+        document.getElementById('modal-pago').style.display = 'flex';
+        document.getElementById('monto-recibido').focus();
+        // Deshabilitar el botón inicialmente
+        document.getElementById('btn-completar-venta').disabled = true;
+    }
+
+    function cerrarPago() {
+        document.getElementById('modal-pago').style.display = 'none';
+    }
+
+    function calcularCambio() {
+        const descuentoGeneral = parseFloat(document.getElementById('descuento_general').value) || 0;
+        const descuentoMonto = subtotalBase * descuentoGeneral / 100;
+        const totalConDescuento = subtotalBase - descuentoMonto;
+
+        const montoRecibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
+        const cambio = montoRecibido - totalConDescuento;
+
+        const cambioDisplay = document.getElementById('cambio-display');
+        const cambioContainer = document.getElementById('cambio-container');
+        const btnCompletarVenta = document.getElementById('btn-completar-venta');
+
+        if (cambio >= 0) {
+            cambioDisplay.textContent = `$${cambio.toFixed(2)}`;
+            cambioContainer.className = 'change-display positive';
+            btnCompletarVenta.disabled = false;
+        } else {
+            cambioDisplay.textContent = `Falta: $${Math.abs(cambio).toFixed(2)}`;
+            cambioContainer.className = 'change-display negative';
+            btnCompletarVenta.disabled = true;
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cerrarPago();
+        }
+    });
+</script>
+{% endblock %}

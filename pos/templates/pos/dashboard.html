@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard — RubiPerfumeria{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="mb-lg">
+        <small>Análisis</small>
+        <h1>Dashboard</h1>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">Ventas de Hoy</div>
+            <div class="kpi-value">${{ total_ventas_hoy|floatformat:2 }}</div>
+            <div class="kpi-change">
+                {{ cambio_dia|floatformat:1 }}% vs ayer
+            </div>
+            <div class="kpi-meta">{{ numero_ventas_hoy }} transacciones</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Ventas del Mes</div>
+            <div class="kpi-value">${{ total_ventas_mes|floatformat:2 }}</div>
+            <div class="kpi-change">
+                {{ cambio_mes|floatformat:1 }}% vs mes anterior
+            </div>
+            <div class="kpi-meta">{{ numero_ventas_mes }} transacciones</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Ticket Promedio</div>
+            <div class="kpi-value">${{ ticket_promedio|floatformat:2 }}</div>
+            <div class="kpi-change">
+                {{ cambio_ticket|floatformat:1 }}% vs mes anterior
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Productos Vendidos</div>
+            <div class="kpi-value">{{ total_productos_vendidos }}</div>
+            <div class="kpi-meta">Este mes</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Total Clientes</div>
+            <div class="kpi-value">{{ total_clientes_mes }}</div>
+            <div class="kpi-meta">Este mes</div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+        <!-- Ventas por Día -->
+        <div class="chart-card full-width">
+            <div class="chart-title">Ventas Últimos 30 Días</div>
+            <div class="chart-container tall">
+                <canvas id="ventasPorDiaChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Productos -->
+        <div class="chart-card">
+            <div class="chart-title">Top 10 Productos Más Vendidos</div>
+            <div class="chart-container tall">
+                <canvas id="topProductosChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Ventas por Cajero -->
+        <div class="chart-card">
+            <div class="chart-title">Top 5 Vendedores del Mes</div>
+            <div class="chart-container">
+                <canvas id="cajerosChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Ventas por Hora -->
+        <div class="chart-card">
+            <div class="chart-title">Distribución por Hora</div>
+            <div class="chart-container">
+                <canvas id="ventasPorHoraChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Stock Bajo -->
+        <div class="chart-card">
+            <div class="chart-title">Productos con Stock Bajo</div>
+            <table class="stock-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th style="text-align: right;">Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos_stock_bajo %}
+                    <tr>
+                        <td>{{ producto.marca }} {{ producto.nombre }}</td>
+                        <td style="text-align: right;">
+                            <span class="stock-badge {% if producto.stock < 5 %}critical{% else %}low{% endif %}">
+                                {{ producto.stock }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center text-muted" style="padding: var(--space-xl);">
+                            Todos los productos tienen stock suficiente
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Configuración minimalista para gráficas
+    Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif';
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = '#737373';
+
+    const chartColor = '#000000';
+    const chartColorLight = 'rgba(0, 0, 0, 0.05)';
+
+    // Gráfica de Ventas por Día
+    const ventasPorDiaCtx = document.getElementById('ventasPorDiaChart').getContext('2d');
+    new Chart(ventasPorDiaCtx, {
+        type: 'line',
+        data: {
+            labels: {{ fechas_grafica|safe }},
+            datasets: [{
+                label: 'Ventas',
+                data: {{ totales_grafica|safe }},
+                borderColor: chartColor,
+                backgroundColor: chartColorLight,
+                borderWidth: 1,
+                fill: true,
+                tension: 0,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHoverBackgroundColor: chartColor
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#000',
+                    padding: 12,
+                    titleFont: { size: 11, weight: 'normal' },
+                    bodyFont: { size: 13, weight: 'bold' },
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    border: { display: false },
+                    grid: { color: '#E8E8E8' },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        }
+                    }
+                },
+                x: {
+                    border: { display: false },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Gráfica de Top Productos
+    const topProductosCtx = document.getElementById('topProductosChart').getContext('2d');
+    new Chart(topProductosCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ productos_labels|safe }},
+            datasets: [{
+                data: {{ productos_valores|safe }},
+                backgroundColor: chartColor,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#000',
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            const cantidad = {{ productos_cantidades|safe }}[context.dataIndex];
+                            return ['$' + context.parsed.x.toFixed(2), cantidad + ' unidades'];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    border: { display: false },
+                    grid: { color: '#E8E8E8' },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        }
+                    }
+                },
+                y: {
+                    border: { display: false },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Gráfica de Cajeros
+    const cajerosCtx = document.getElementById('cajerosChart').getContext('2d');
+    new Chart(cajerosCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ cajeros_labels|safe }},
+            datasets: [{
+                data: {{ cajeros_valores|safe }},
+                backgroundColor: chartColor,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#000',
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            const cantidad = {{ cajeros_cantidades|safe }}[context.dataIndex];
+                            return ['$' + context.parsed.y.toFixed(2), cantidad + ' transacciones'];
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    border: { display: false },
+                    grid: { color: '#E8E8E8' },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        }
+                    }
+                },
+                x: {
+                    border: { display: false },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Gráfica de Ventas por Hora
+    const ventasPorHoraCtx = document.getElementById('ventasPorHoraChart').getContext('2d');
+    new Chart(ventasPorHoraCtx, {
+        type: 'line',
+        data: {
+            labels: {{ horas_labels|safe }},
+            datasets: [{
+                data: {{ horas_valores|safe }},
+                borderColor: chartColor,
+                backgroundColor: chartColorLight,
+                borderWidth: 1,
+                fill: true,
+                tension: 0,
+                pointRadius: 0,
+                pointHoverRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#000',
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    border: { display: false },
+                    grid: { color: '#E8E8E8' },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        }
+                    }
+                },
+                x: {
+                    border: { display: false },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

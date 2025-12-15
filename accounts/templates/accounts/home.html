@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio — RubiPerfumeria{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Bienvenido</h1>
+
+    <div class="card">
+        <div class="card-body">
+            <p><small>Usuario</small></p>
+            <p style="margin-bottom: 1.5rem;">{{ user.username }}</p>
+
+            <p><small>Rol</small></p>
+            <p style="margin-bottom: 1.5rem;">{{ user.profile.get_rol_display }}</p>
+
+            <p><small>Email</small></p>
+            <p>{{ user.email }}</p>
+        </div>
+    </div>
+
+    <div class="mt-xl">
+        <h2>Accesos rápidos</h2>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 2rem;">
+            <a href="{% url 'pos:pos_principal' %}" class="card" style="border: 1px solid var(--color-black);">
+                <div class="card-body">
+                    <h3 style="margin-bottom: 0.5rem;">Punto de Venta</h3>
+                    <small class="text-muted">Registrar ventas</small>
+                </div>
+            </a>
+
+            <a href="{% url 'pos:lista_ventas' %}" class="card">
+                <div class="card-body">
+                    <h3 style="margin-bottom: 0.5rem;">Consultar Ventas</h3>
+                    <small class="text-muted">Historial de transacciones</small>
+                </div>
+            </a>
+
+            {% if user.profile.puede_gestionar_inventario %}
+            <a href="{% url 'perfume_list' %}" class="card">
+                <div class="card-body">
+                    <h3 style="margin-bottom: 0.5rem;">Inventario</h3>
+                    <small class="text-muted">Gestionar perfumes</small>
+                </div>
+            </a>
+
+            <a href="{% url 'pos:dashboard' %}" class="card">
+                <div class="card-body">
+                    <h3 style="margin-bottom: 0.5rem;">Dashboard</h3>
+                    <small class="text-muted">Métricas y estadísticas</small>
+                </div>
+            </a>
+
+            <a href="{% url 'pos:reportes_ventas' %}" class="card">
+                <div class="card-body">
+                    <h3 style="margin-bottom: 0.5rem;">Reportes</h3>
+                    <small class="text-muted">Análisis de ventas</small>
+                </div>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if user.profile.es_administrador %}
+    <div class="mt-xl">
+        <p class="text-muted">Tienes privilegios de administrador. Puedes gestionar todos los aspectos del sistema.</p>
+    </div>
+    {% elif user.profile.es_supervisor %}
+    <div class="mt-xl">
+        <p class="text-muted">Tienes privilegios de supervisor. Puedes gestionar el inventario y visualizar reportes.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

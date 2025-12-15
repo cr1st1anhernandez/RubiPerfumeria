@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes — RubiPerfumeria{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="mb-lg">
+        <small>Análisis</small>
+        <h1>Reportes de Ventas</h1>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-lg">
+        <div class="card-body">
+            <form method="get" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); align-items: end;">
+                <div class="form-group">
+                    <label for="fecha_desde">Fecha Desde</label>
+                    <input type="date" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha_hasta">Fecha Hasta</label>
+                    <input type="date" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="cajero">Cajero</label>
+                    <select id="cajero" name="cajero">
+                        <option value="">Todos</option>
+                        {% for cajero in cajeros %}
+                        <option value="{{ cajero.id }}" {% if cajero_seleccionado == cajero.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cajero.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: var(--space-xs);">
+                    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Botones de exportación -->
+    <div class="flex flex-gap mb-lg">
+        <a href="?fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}{% if cajero_seleccionado %}&cajero={{ cajero_seleccionado }}{% endif %}&exportar=pdf"
+           class="btn btn-secondary btn-sm">Exportar PDF</a>
+        <a href="?fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}{% if cajero_seleccionado %}&cajero={{ cajero_seleccionado }}{% endif %}&exportar=excel"
+           class="btn btn-secondary btn-sm">Exportar Excel</a>
+    </div>
+
+    <!-- Resumen -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-xl);">
+        <div class="card">
+            <div class="card-body">
+                <small>Total de Ventas</small>
+                <h2 style="margin: var(--space-xs) 0 0 0;">${{ total_ventas|floatformat:2 }}</h2>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <small>Transacciones</small>
+                <h2 style="margin: var(--space-xs) 0 0 0;">{{ cantidad_ventas }}</h2>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <small>Ticket Promedio</small>
+                <h2 style="margin: var(--space-xs) 0 0 0;">${{ ticket_promedio|floatformat:2 }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de ventas -->
+    <div>
+        <h2 class="mb-md">Detalle de Ventas{% if ventas.count > 100 %} (Primeras 100){% endif %}</h2>
+
+        {% if ventas %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Ticket</th>
+                    <th>Cajero</th>
+                    <th>Subtotal</th>
+                    <th>Descuento</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta in ventas %}
+                <tr>
+                    <td>{{ venta.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td>{{ venta.fecha_creacion|time:"H:i" }}</td>
+                    <td>{{ venta.numero_ticket }}</td>
+                    <td>{{ venta.cajero.username }}</td>
+                    <td>${{ venta.subtotal|floatformat:2 }}</td>
+                    <td>${{ venta.descuento_monto|floatformat:2 }}</td>
+                    <td><strong>${{ venta.total|floatformat:2 }}</strong></td>
+                    <td><small>{{ venta.get_estado_display }}</small></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="text-center mt-xl">
+            <p class="text-muted">No hay ventas en el período seleccionado</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

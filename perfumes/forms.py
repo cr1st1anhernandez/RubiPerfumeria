@@ -8,6 +8,7 @@ class PerfumeForm(forms.ModelForm):
         fields = [
             'nombre',
             'marca',
+            'distribuidor',
             'descripcion',
             'codigo_barras',
             'tipo',

@@ -1,45 +1,109 @@
-{% extends 'perfumes/base.html' %}
+{% extends 'base.html' %}
 
-{% block title %}Lista de Perfumes - Rubi Perfumeria{% endblock %}
+{% block title %}Inventario — RubiPerfumeria{% endblock %}
 
 {% block content %}
-<h2>Lista de Perfumes</h2>
+<div class="container">
+    <div class="flex-between mb-lg">
+        <div>
+            <small>Gestión de Productos</small>
+            <h1>Inventario</h1>
+        </div>
 
-{% if perfumes %}
-    <table border="1" cellpadding="10" cellspacing="0">
+        <div class="flex flex-gap">
+            <a href="?exportar=pdf" class="btn btn-secondary btn-sm">Exportar PDF</a>
+            <a href="?exportar=excel" class="btn btn-secondary btn-sm">Exportar Excel</a>
+            {% if user.profile.puede_gestionar_inventario %}
+            <a href="{% url 'perfume_create' %}" class="btn btn-primary btn-sm">Agregar Producto</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if perfumes %}
+    <div style="background: var(--color-gray-100); padding: var(--space-md); margin-bottom: var(--space-lg);">
+        <small>Total de productos: {{ perfumes.count }}</small>
+        {% if movimientos %}
+        <small style="margin-left: var(--space-md);">Movimientos recientes: {{ total_movimientos }}</small>
+        {% endif %}
+    </div>
+
+    <table>
         <thead>
             <tr>
                 <th>Marca</th>
                 <th>Nombre</th>
                 <th>Tipo</th>
-                <th>Genero</th>
+                <th>Género</th>
                 <th>Volumen</th>
                 <th>Precio</th>
                 <th>Stock</th>
-                <th>Acciones</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             {% for perfume in perfumes %}
-            <tr>
+            <tr {% if perfume.stock < 10 %}style="background-color: var(--color-gray-100);"{% endif %}>
                 <td>{{ perfume.marca }}</td>
-                <td>{{ perfume.nombre }}</td>
+                <td><strong>{{ perfume.nombre }}</strong></td>
                 <td>{{ perfume.get_tipo_display }}</td>
                 <td>{{ perfume.get_genero_display }}</td>
                 <td>{{ perfume.volumen }} ml</td>
-                <td>${{ perfume.precio }}</td>
-                <td>{{ perfume.stock }}</td>
-                <td>
-                    <a href="{% url 'perfume_detail' perfume.pk %}">Ver</a> |
-                    <a href="{% url 'perfume_update' perfume.pk %}">Editar</a> |
-                    <a href="{% url 'perfume_delete' perfume.pk %}">Eliminar</a>
+                <td>${{ perfume.precio|floatformat:2 }}</td>
+                <td>{% if perfume.stock < 10 %}<strong>{{ perfume.stock }}</strong>{% else %}{{ perfume.stock }}{% endif %}</td>
+                <td style="text-align: right;">
+                    <a href="{% url 'perfume_detail' perfume.pk %}" class="btn-tertiary">Ver</a>
+                    {% if user.profile.puede_gestionar_inventario %}
+                    <a href="{% url 'perfume_update' perfume.pk %}" class="btn-tertiary">Editar</a>
+                    <a href="{% url 'perfume_delete' perfume.pk %}" class="btn-tertiary">Eliminar</a>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-{% else %}
-    <p>No hay perfumes registrados.</p>
-    <p><a href="{% url 'perfume_create' %}">Agregar el primer perfume</a></p>
-{% endif %}
+
+    {% if movimientos %}
+    <div class="mt-xl">
+        <h2>Últimos Movimientos</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Marca</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Usuario</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movimiento in movimientos %}
+                <tr>
+                    <td>{{ movimiento.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                    <td>{{ movimiento.perfume.nombre }}</td>
+                    <td>{{ movimiento.perfume.marca }}</td>
+                    <td>{{ movimiento.get_tipo_movimiento_display }}</td>
+                    <td>{{ movimiento.cantidad }}</td>
+                    <td>{{ movimiento.usuario.username }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No hay movimientos registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center mt-xl">
+        <p class="text-muted mb-lg">No hay productos registrados</p>
+        {% if user.profile.puede_gestionar_inventario %}
+        <a href="{% url 'perfume_create' %}" class="btn btn-primary">Agregar Primer Producto</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

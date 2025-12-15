@@ -1,0 +1,222 @@
+/*
+ * POS Module Specific Styles
+ * Complementa premium-system.css
+ */
+
+/* POS Layout */
+.pos-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl);
+    margin-top: var(--space-lg);
+}
+
+.pos-section {
+    min-height: 400px;
+}
+
+/* Search Box */
+.pos-search {
+    width: 100%;
+    padding: var(--space-md) 0;
+    font-size: var(--text-lg);
+    border: none;
+    border-bottom: 2px solid var(--color-black);
+    background: transparent;
+    font-family: var(--font-primary);
+}
+
+.pos-search:focus {
+    outline: none;
+}
+
+/* Results */
+.search-results {
+    margin-top: var(--space-lg);
+}
+
+.product-result {
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.product-result:hover {
+    background: var(--color-gray-100);
+    padding-left: var(--space-sm);
+    padding-right: var(--space-sm);
+}
+
+.product-name {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: 0.25rem;
+}
+
+.product-info {
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+}
+
+/* Sale Items */
+.sale-items {
+    list-style: none;
+}
+
+.sale-item {
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--color-gray-200);
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.sale-item-name {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--text-sm);
+}
+
+.sale-item-brand {
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+}
+
+.sale-item-quantity {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quantity-input {
+    width: 60px;
+    padding: 0.5rem;
+    text-align: center;
+    border: 1px solid var(--color-gray-300);
+    font-family: var(--font-primary);
+}
+
+/* Sale Summary */
+.sale-summary {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 2px solid var(--color-black);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-xs) 0;
+    font-size: var(--text-sm);
+}
+
+.summary-row.total {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-bold);
+    padding: var(--space-sm) 0;
+    border-top: 1px solid var(--color-gray-300);
+    margin-top: var(--space-sm);
+}
+
+/* Payment Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--color-white);
+    padding: var(--space-xl);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    margin-bottom: var(--space-lg);
+}
+
+.modal-header h2 {
+    margin-bottom: 0;
+}
+
+.payment-amount {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
+    padding: var(--space-lg);
+    background: var(--color-gray-100);
+    margin: var(--space-lg) 0;
+}
+
+.change-display {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
+    padding: var(--space-md);
+}
+
+.change-display.positive {
+    color: var(--color-black);
+}
+
+.change-display.negative {
+    color: var(--color-gray-500);
+}
+
+/* Instructions */
+.instructions {
+    background: var(--color-gray-100);
+    padding: var(--space-md);
+    margin-top: var(--space-lg);
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+}
+
+.instructions ul {
+    list-style: none;
+    margin-top: var(--space-sm);
+}
+
+.instructions li {
+    padding: 0.25rem 0;
+}
+
+.instructions li:before {
+    content: "—";
+    margin-right: var(--space-xs);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: var(--space-2xl) var(--space-lg);
+    color: var(--color-gray-500);
+}
+
+.empty-state p {
+    font-size: var(--text-sm);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .pos-layout {
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+    }
+
+    .sale-item {
+        grid-template-columns: 1fr;
+        gap: var(--space-xs);
+    }
+}
