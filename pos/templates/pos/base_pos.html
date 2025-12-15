@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema POS - Rubi Perfumeria{% endblock %}</title>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1>RUBI PERFUMERIA - Sistema POS</h1>
+        <nav>
+            <a href="{% url 'pos:pos_principal' %}">Punto de Venta</a>
+            <a href="{% url 'pos:lista_ventas' %}">Consultar Ventas</a>
+            {% if user.profile.puede_gestionar_inventario %}
+            <a href="{% url 'pos:reportes_ventas' %}">Reportes</a>
+            <a href="{% url 'perfume_list' %}">Inventario</a>
+            {% endif %}
+            <a href="{% url 'home' %}">Inicio</a>
+            <a href="{% url 'logout' %}">Cerrar Sesión</a>
+        </nav>
+        <p>Usuario: {{ user.username }} | Rol: {{ user.profile.get_rol_display }}</p>
+    </header>
+
+    {% if messages %}
+    {% for message in messages %}
+        <div>
+            <strong>{{ message }}</strong>
+        </div>
+    {% endfor %}
+    {% endif %}
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -147,6 +147,7 @@ class PerfumeModelTest(TestCase):
 
 class PerfumeViewsTestClient(TestCase):
     def setUp(self):
+        from django.contrib.auth.models import User
         self.client = Client()
         # Crear usuario con rol de SUPERVISOR para poder acceder a todas las vistas
         self.user = User.objects.create_user(
@@ -311,6 +312,7 @@ class PerfumeSeleniumTest(LiveServerTestCase):
         super().tearDownClass()
 
     def setUp(self):
+        from django.contrib.auth.models import User
         if not self.selenium:
             self.skipTest("Selenium WebDriver no disponible")
 
